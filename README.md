@@ -8,7 +8,7 @@ Reanimated 3**, **React Native Gesture Handler**, and **Expo Haptics**.
 
 ---
 
-## ✨ Features
+## Features
 
 - **Home** — premium dashboard with typewriter greeting, swipeable wallet cards
   (spring physics, active 1.02× / adjacent 0.92×), MyTap Day reward card, quick actions.
@@ -39,7 +39,7 @@ confetti, number count-up/down (400ms, emerald/coral glow), pull-to-refresh glas
 
 ---
 
-## 🚀 Getting started
+## Getting started
 
 ### Prerequisites
 - Node.js 18+ (LTS recommended)
@@ -66,7 +66,7 @@ npm run typecheck
 
 ---
 
-## 🗂 Project structure
+## Project structure
 
 ```
 mytap/
@@ -112,7 +112,7 @@ Tariff: Mascom Connect 10GB · 84% used · 1.6GB left · Renews 30 Aug.
 
 ---
 
-## 📦 Tech stack
+## Tech stack
 - React Native 0.76 · Expo SDK 52 · Expo Router 5
 - TypeScript (strict)
 - React Native Reanimated 3 · React Native Gesture Handler
