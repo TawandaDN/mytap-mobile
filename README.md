@@ -2,23 +2,18 @@
 
 A premium, Botswana-focused digital wallet and financial services app built with
 **React Native + Expo + Expo Router + TypeScript**, powered by **React Native
-Reanimated 3**, **React Native Gesture Handler**, and **Expo Haptics**.
+Reanimated 4**, **React Native Gesture Handler**, and **Expo Haptics**.
 
 > Runs entirely in **Expo Go** — no native build required.
 
 ---
 
-## Features
+## ✨ Features
 
-- **Home** — premium dashboard with typewriter greeting, swipeable wallet cards
-  (spring physics, active 1.02× / adjacent 0.92×), MyTap Day reward card, quick actions.
-- **Cards** — all payment methods (MyTap Wallet, Mastercard, MyZaka), 3D flip,
-  freeze/unfreeze toggle, add-money modal.
-- **Pay** — payment hub with Botswana merchants (BPC, Mascom, BTC, WUC, Choppies…),
-  full payment flow: button pulse → 800ms processing spinner → success green pulse +
-  checkmark spring + confetti → receipt slide-up → balance count-up.
-- **Tariff** — animated circular progress ring (green → yellow → red), usage breakdown,
-  insights, add-bundle.
+- **Home** — premium dashboard with typewriter greeting, swipeable wallet cards (spring physics, active 1.02× / adjacent 0.92×), MyTap Day reward card, quick actions.
+- **Cards** — all payment methods (MyTap Wallet, Mastercard, MyZaka), 3D flip, freeze/unfreeze toggle, add-money modal.
+- **Pay** — payment hub with Botswana merchants (BPC, Mascom, BTC, WUC, Choppies…), full payment flow: button pulse → 800ms processing spinner → success green pulse + checkmark spring + confetti → receipt slide-up → balance count-up.
+- **Tariff** — animated circular progress ring (green → yellow → red), usage breakdown, insights, add-bundle.
 - **Sticker** — NFC sticker management with 3D tilt visual, activate/freeze, activity log.
 - **More** — profile, security, settings, sign out.
 - **Guardrail** — spending limits & financial wellness.
@@ -32,14 +27,11 @@ Reanimated 3**, **React Native Gesture Handler**, and **Expo Haptics**.
 - Dark / light mode, water-bubble shimmer, 3D floating, "MyTap Glow".
 
 ### Animations
-Water bubble (6s shimmer), spring physics (damping 0.8 / stiffness 100 / mass 0.8),
-card swipe + 3D tilt, tab crossfade 300ms, modal slide-up 400ms spring, payment success
-confetti, number count-up/down (400ms, emerald/coral glow), pull-to-refresh glass spinner,
-2s skeleton shimmer, staggered entry, haptics everywhere.
+Water bubble (6s shimmer), spring physics (damping 0.8 / stiffness 100 / mass 0.8), card swipe + 3D tilt, tab crossfade 300ms, modal slide-up 400ms spring, payment success confetti, number count-up/down (400ms, emerald/coral glow), pull-to-refresh glass spinner, 2s skeleton shimmer, staggered entry, haptics everywhere.
 
 ---
 
-## Getting started
+## 🚀 Getting started
 
 ### Prerequisites
 - Node.js 18+ (LTS recommended)
@@ -66,7 +58,7 @@ npm run typecheck
 
 ---
 
-## Project structure
+## 🗂 Project structure
 
 ```
 mytap/
@@ -85,9 +77,9 @@ mytap/
 ├── src/
 │   ├── theme/              # Colors, typography, spacing, shadows, ThemeContext
 │   ├── components/
-│   │   ├── animations/     # WaterBubble, CountUp, Skeleton, Staggered, Typewriter, Confetti
+│   │   ├── animations/     # WaterBubble, CountUp, Skeleton, Staggered, Typewriter, Confetti, AnimatedBackground
 │   │   ├── cards/          # WalletCardView, CardCarousel, GlassCard, TiltCard
-│   │   └── ui/             # Button, ProgressRing, ScreenContainer, BottomTabBar, Modal, Toast
+│   │   └── ui/             # Button, ProgressRing, ScreenContainer, BottomTabBar, Modal, Toast, PressableScale
 │   ├── data/               # Botswana-specific mock data
 │   ├── store/              # App state (wallet, transactions, tariff, stickers, guardrail)
 │   └── utils/              # format, haptics
@@ -97,7 +89,7 @@ mytap/
 
 ---
 
-## 🧾 Mock data (Botswana)
+## 🧪 Mock data (Botswana)
 
 | Card | Balance | Last 4 |
 |------|---------|--------|
@@ -105,17 +97,16 @@ mytap/
 | Mastercard | P3,877.00 | •••• 1190 |
 | MyZaka Card | P1,200.00 | •••• 4455 |
 
-Transactions: BPC · Airtime · −P100.00 · 29 Aug · Mascom · Data · −P5.00 · 29 Aug ·
-Choppies · Groceries · −P278.59 · 29 Aug.
+Transactions: BPC · Airtime · −P100.00 · 29 Aug · Mascom · Data · −P5.00 · 29 Aug · Choppies · Groceries · −P278.59 · 29 Aug.
 
 Tariff: Mascom Connect 10GB · 84% used · 1.6GB left · Renews 30 Aug.
 
 ---
 
-## Tech stack
-- React Native 0.76 · Expo SDK 52 · Expo Router 5
+## 📦 Tech stack
+- React Native 0.86 · Expo SDK 57 · Expo Router 6
 - TypeScript (strict)
-- React Native Reanimated 3 · React Native Gesture Handler
+- React Native Reanimated 4 · React Native Gesture Handler
 - Expo Haptics · expo-blur · expo-linear-gradient · react-native-svg
 - @expo-google-fonts/inter
 
