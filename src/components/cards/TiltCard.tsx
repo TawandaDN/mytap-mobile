@@ -1,80 +1,42 @@
-import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
-import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
-import { spring } from '../../theme';
+import React, { useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { springConfig } from '../../theme';
+import { haptics } from '../../utils/haptics';
 
-/**
- * 3D card tilt on touch — rotates 3-5deg and moves a water bubble highlight
- * to follow the touch point.
- */
-export function TiltCard({
-  children,
-  style,
-  maxTilt = 4,
-}: {
-  children: React.ReactNode;
-  style?: ViewStyle;
-  maxTilt?: number;
-}) {
+export function TiltCard({ children, style, maxTilt = 5, onPress }: { children: React.ReactNode; style?: object; maxTilt?: number; onPress?: () => void }) {
   const rx = useSharedValue(0);
   const ry = useSharedValue(0);
-  const hx = useSharedValue(50);
-  const hy = useSharedValue(50);
-
-  const onGesture = (e: PanGestureHandlerGestureEvent) => {
-    const { x, y, width, height } = e.nativeEvent;
-    const px = x / width;
-    const py = y / height;
-    ry.value = (px - 0.5) * 2 * maxTilt;
-    rx.value = (0.5 - py) * 2 * maxTilt;
-    hx.value = px * 100;
-    hy.value = py * 100;
-  };
-
-  const onEnd = () => {
-    rx.value = withSpring(0, spring);
-    ry.value = withSpring(0, spring);
-  };
-
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1000 },
-      { rotateX: `${rx.value}deg` },
-      { rotateY: `${ry.value}deg` },
-    ],
-  }));
-
-  const highlightStyle = useAnimatedStyle(() => ({
-    left: `${hx.value}%`,
-    top: `${hy.value}%`,
-  }));
-
+  const hx = useSharedValue(0.5);
+  const hy = useSharedValue(0.3);
+  const width = useRef(1);
+  const pan = Gesture.Pan()
+    .onBegin(() => { haptics.tilt(); })
+    .onUpdate((e) => {
+      const nx = e.x / width.current;
+      const ny = e.y / 200;
+      ry.value = interpolate(nx, [0, 1], [-maxTilt, maxTilt]);
+      rx.value = interpolate(ny, [0, 1], [maxTilt, -maxTilt]);
+      hx.value = nx;
+      hy.value = ny;
+    })
+    .onEnd(() => { rx.value = withSpring(0, springConfig); ry.value = withSpring(0, springConfig); });
+  const tap = Gesture.Tap().onEnd(() => { onPress?.(); });
+  const composed = Gesture.Simultaneous(pan, tap);
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ perspective: 1000 }, { rotateX: `${rx.value}deg` }, { rotateY: `${ry.value}deg` }] }));
+  const highlightStyle = useAnimatedStyle(() => ({ transform: [{ translateX: (hx.value - 0.5) * 120 }, { translateY: (hy.value - 0.5) * 120 }], opacity: 0.5 }));
   return (
-    <PanGestureHandler onGestureEvent={onGesture} onEnded={onEnd}>
-      <Animated.View style={[styles.wrap, style, cardStyle]}>
+    <GestureDetector gesture={composed}>
+      <Animated.View style={[styles.wrap, cardStyle, style]} onLayout={(e) => { width.current = e.nativeEvent.layout.width; }}>
         {children}
         <Animated.View pointerEvents="none" style={[styles.highlight, highlightStyle]} />
       </Animated.View>
-    </PanGestureHandler>
+    </GestureDetector>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    position: 'relative',
-  },
-  highlight: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    marginLeft: -60,
-    marginTop: -60,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
+  wrap: { position: 'relative' },
+  highlight: { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.18)', top: -40, left: -40 },
 });
