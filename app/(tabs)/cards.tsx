@@ -26,7 +26,8 @@ export default function CardsScreen() {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) { show('Enter a valid amount', 'error'); return; }
     dispatch({ type: 'ADD_MONEY', cardId: addCardId!, amount: amt });
-    setAddCardId(null); haptics.success(); show(`Added ${formatPla(amt)} to your wallet`);
+    setAddCardId(null); haptics.success();
+    show(`Added ${formatPula(amt)} to your wallet`);
   };
   const toggleFreeze = (id: string) => { dispatch({ type: 'TOGGLE_FREEZE', cardId: id }); haptics.medium(); };
   return (
@@ -77,7 +78,7 @@ function FlipCard({ card, onFreeze, onAdd }: { card: any; onFreeze: () => void; 
             <Text style={[styles.cardName, { color: theme.text }]}>{card.name}</Text>
             <View style={[styles.statusPill, { backgroundColor: card.frozen ? '#E74C3C' : '#2ECC71' }]}><Text style={styles.statusText}>{card.frozen ? 'Frozen' : 'Active'}</Text></View>
           </View>
-          <Text style={[styles.balance, { color: theme.text }]}>{formatPla(card.balance)}</Text>
+          <Text style={[styles.balance, { color: theme.text }]}>{formatPula(card.balance)}</Text>
           <Text style={[styles.mask, { color: theme.textMuted }]}>{maskCard(card.last4)}</Text>
           <View style={styles.cardActions}>
             <Pressable style={styles.actionBtn} onPress={onAdd}><Ionicons name="add" size={18} color={theme.accent} /><Text style={[styles.actionText, { color: theme.accent }]}>Add money</Text></Pressable>
