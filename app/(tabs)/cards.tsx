@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
+  Easing,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { ScreenContainer } from '../../src/components/ui/ScreenContainer';
@@ -170,15 +171,13 @@ function FlipCard({
 }) {
   const { theme } = useTheme();
   const flip = useSharedValue(0);
-  const tiltX = useSharedValue(0);
-  const tiltY = useSharedValue(0);
+  const lift = useSharedValue(0);
 
   const frontStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 1000 },
       { rotateY: `${interpolate(flip.value, [0, 1], [0, 180])}deg` },
-      { rotateX: `${tiltX.value}deg` },
-      { rotateY: `${tiltY.value}deg` },
+      { translateY: lift.value },
     ],
     opacity: flip.value < 0.5 ? 1 : 0,
   }));
@@ -192,22 +191,17 @@ function FlipCard({
   }));
 
   const toggle = () => {
-    flip.value = withSpring(flip.value === 0 ? 1 : 0, { damping: 0.8, stiffness: 100, mass: 0.8 });
+    flip.value = withTiming(flip.value === 0 ? 1 : 0, { duration: 300, easing: Easing.out(Easing.cubic) });
     haptics.flip();
   };
 
-  const onTilt = (e: any) => {
-    const { locationX, locationY } = e.nativeEvent;
-    const w = 300;
-    const h = 200;
-    tiltX.value = withSpring(((locationY / h) - 0.5) * 10, { damping: 0.8, stiffness: 100, mass: 0.8 });
-    tiltY.value = withSpring(((locationX / w) - 0.5) * 10, { damping: 0.8, stiffness: 100, mass: 0.8 });
-    haptics.tilt();
+  const onTilt = () => {
+    lift.value = withTiming(-2, { duration: 300, easing: Easing.out(Easing.cubic) });
+    haptics.soft();
   };
 
   const resetTilt = () => {
-    tiltX.value = withSpring(0, { damping: 0.8, stiffness: 100, mass: 0.8 });
-    tiltY.value = withSpring(0, { damping: 0.8, stiffness: 100, mass: 0.8 });
+    lift.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
   };
 
   return (
