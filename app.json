@@ -32,7 +32,11 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "expo-sharing",
+      "expo-local-authentication",
+      "expo-print",
+      "expo-file-system"
     ],
     "experiments": {
       "typedRoutes": true
