@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle, DimensionValue } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -7,6 +7,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../theme/ThemeContext';
 
 /**
  * Skeleton loading block with a 2s shimmer sweep.
@@ -14,43 +16,51 @@ import Animated, {
 export function Skeleton({
   width = '100%',
   height = 16,
-  radius = 8,
+  radius = 12,
   style,
 }: {
-  width?: number | string;
+  width?: DimensionValue;
   height?: number;
   radius?: number;
   style?: ViewStyle;
 }) {
-  const progress = useSharedValue(0);
+  const { theme } = useTheme();
+  const x = useSharedValue(-1);
 
   useEffect(() => {
-    progress.value = withRepeat(
-      withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+    x.value = withRepeat(
+      withTiming(1.5, { duration: 6000, easing: Easing.linear }),
       -1,
-      true
+      false
     );
-  }, [progress]);
+  }, [x]);
 
   const shimmer = useAnimatedStyle(() => ({
-    transform: [{ translateX: -200 + progress.value * 400 }],
+    transform: [{ translateX: x.value * 200 }],
   }));
 
   return (
-    <View style={[styles.base, { width, height, borderRadius: radius }, style]}>
-      <Animated.View style={[styles.sweep, shimmer]} />
+    <View
+      style={[
+        styles.base,
+        { width, height, borderRadius: radius, backgroundColor: theme.surfaceAlt },
+        style,
+      ]}
+    >
+      <Animated.View style={[StyleSheet.absoluteFill, shimmer]}>
+        <LinearGradient
+          colors={['transparent', 'rgba(255,255,255,0.5)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: 'rgba(15,23,41,0.08)',
     overflow: 'hidden',
-  },
-  sweep: {
-    width: 200,
-    height: '100%',
-    backgroundColor: 'rgba(255,255,255,0.5)',
   },
 });
