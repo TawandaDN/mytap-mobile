@@ -1,104 +1,125 @@
 import React, { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
+import { ScreenContainer } from '../src/components/ui/ScreenContainer';
+import { GlassCard } from '../src/components/cards/GlassCard';
 import { StaggeredItem } from '../src/components/animations/Staggered';
+import { useApp } from '../src/store/AppStore';
 import { aiSuggestions } from '../src/data/mock';
+import { formatPula } from '../src/utils/format';
 import { spacing, type, radius } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
-interface Message { id: string; role: 'user' | 'assistant'; text: string; }
-const INITIAL: Message[] = [{ id: 'm0', role: 'assistant', text: "Hi Tawanda! I'm your MyTap assistant. Ask me about your spending, data usage, or anything financial." }];
-function replyFor(input: string): string {
-  const q = input.toLowerCase();
-  if (q.includes('grocery') || q.includes('spend')) return 'You spent P278.59 at Choppies on 29 Aug. Groceries make up about 38% of your monthly spending. Want me to set a grocery budget?';
-  if (q.includes('data') || q.includes('tariff') || q.includes('bundle')) return 'Your data is 84% used with 1.6GB left. It renews on 30 Aug. Consider adding a 2GB bundle to be safe.';
-  if (q.includes('top up') || q.includes('wallet') || q.includes('balance')) return 'Your MyTap Wallet balance is P3,553.77. You can add money from the Cards tab anytime.';
-  if (q.includes('limit') || q.includes('guardrail')) return 'Your monthly guardrail is P10,000 and you have used P4,120 (41%). You are within your limit.';
-  return "I can help with spending insights, data usage, wallet balance, and guardrail limits. Try asking about your groceries or data usage!";
-}
+interface Msg { id: string; from: 'user' | 'ai'; text: string; }
+
 export default function AssistantScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>(INITIAL);
+  const { state } = useApp();
+  const [messages, setMessages] = useState<Msg[]>([{ id: 'm0', from: 'ai', text: 'Hi Tawanda! I can help with your spending, data usage, savings and more. What would you like to know?' }]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
-  const send = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', text: trimmed };
-    setMessages((m) => [...m, userMsg]); setInput(''); haptics.medium(); setTyping(true);
+  const listRef = useRef<any>(null);
+  const replyFor = (q: string): string => {
+    const t = q.toLowerCase();
+    if (t.includes('grocery') || t.includes('spend')) {
+      const g = state.transactions.filter((x) => x.category === 'Groceries').reduce((s, x) => s + Math.abs(x.amount), 0);
+      return `You've spent ${formatPula(g)} on groceries this month across ${state.transactions.filter((x) => x.category === 'Groceries').length} transactions. Choppies was your biggest spend.`;
+    }
+    if (t.includes('data') || t.includes('tariff') || t.includes('usage')) {
+      return `You've used ${state.tariff.usedGB}GB of your ${state.tariff.totalGB}GB ${state.tariff.name} (${state.tariff.usedPct}%). You have ${state.tariff.leftGB}GB left. Consider adding a bundle before it renews.`;
+    }
+    if (t.includes('top up') || t.includes('wallet') || t.includes('balance')) {
+      const w = state.cards.find((c) => c.id === 'wallet');
+      return `Your MyTap Wallet balance is ${formatPula(w?.balance || 0)}. You can top up from the Cards tab anytime.`;
+    }
+    if (t.includes('limit') || t.includes('guardrail') || t.includes('spending')) {
+      return `Your monthly guardrail is ${formatPula(state.guardrail.monthlyLimit)} and you've used ${formatPula(state.guardrail.used)} (${state.guardrail.pct}%). You're on track.`;
+    }
+    if (t.includes('save') || t.includes('goal')) {
+      const total = state.savingsGoals.reduce((s, g) => s + g.saved, 0);
+      return `You've saved ${formatPula(total)} across ${state.savingsGoals.length} goals. Your Emergency Fund is your most funded goal.`;
+    }
+    if (t.includes('reward') || t.includes('point')) {
+      return `You have ${state.totalPoints} MyTap Points, worth about ${formatPula(Math.round(state.totalPoints / 10))}. Redeem them in the Rewards hub.`;
+    }
+    if (t.includes('hello') || t.includes('hi') || t.includes('hey')) {
+      return 'Hello! I can help with your spending, data, savings, rewards and more. What would you like to know?';
+    }
+    return 'I can help you understand your spending, check data usage, review savings goals, and more. Try asking about your groceries, data usage, or wallet balance.';
+  };
+  const send = () => {
+    const text = input.trim();
+    if (!text) return;
+    haptics.medium();
+    setMessages((m) => [...m, { role: 'user', from: 'user', text }]);
+    setInput('');
+    setTyping(true);
     setTimeout(() => {
-      const reply: Message = { id: `a-${Date.now()}`, role: 'assistant', text: replyFor(trimmed) };
-      setMessages((m) => [...m, reply]); setTyping(false); haptics.light();
+      setMessages((m) => [...m, { role: 'ai', from: 'ai', text: replyFor(text) }]);
+      setTyping(false);
+      haptics.light();
     }, 900);
   };
   return (
-    <KeyboardAvoidingView style={[styles.root, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.header}>
-        <PressableScale style={styles.backBtn} onPress={() => { haptics.light(); router.back(); }}><Ionicons name="chevron-back" size={22} color={theme.text} /></PressableScale>
-        <View style={styles.headerInfo}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>MyTap Assistant</Text>
-          <Text style={[styles.headerSub, { color: theme.textMuted }]}>Financial insights</Text>
+    <ScreenContainer>
+      <StaggeredItem index={0}>
+        <View style={styles.header}>
+          <PressableScale style={styles.backBtn} onPress={() => { haptics.light(); router.back(); }}><Ionicons name="chevron-back" size={22} color={theme.text} /></PressableScale>
+          <View style={styles.headerInfo}><Text style={[styles.title, { color: theme.text }]}>MyTap Assistant</Text><Text style={[styles.subtitle, { color: theme.textMuted }]}>Financial insights</Text></View>
+          <View style={[styles.onlineDot, { backgroundColor: '#2ECC71' }]} />
         </View>
-        <View style={[styles.onlineDot, { backgroundColor: '#2ECC71' }]} />
-      </View>
-      <ScrollView ref={scrollRef} style={styles.chat} contentContainerStyle={styles.chatContent} onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
-        {messages.map((m, i) => (
-          <StaggeredItem key={m.id} index={i}>
-            <View style={[styles.bubbleRow, m.role === 'user' ? styles.userRow : styles.assistantRow]}>
-              {m.role === 'assistant' && <View style={[styles.avatar, { backgroundColor: theme.accent }]}><Ionicons name="sparkles" size={14} color="#fff" /></View>}
-              <View style={[styles.bubble, m.role === 'user' ? [styles.userBubble, { backgroundColor: theme.accent }] : [styles.assistantBubble, { backgroundColor: theme.surface, borderColor: theme.border }]]}>
-                <Text style={[styles.bubbleText, { color: m.role === 'user' ? '#fff' : theme.text }]}>{m.text}</Text>
+      </StaggeredItem>
+      <StaggeredItem index={1}>
+        <View style={styles.suggestions}>
+          {aiSuggestions.map((s) => (
+            <PressableScale key={s} style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => { setInput(s); haptics.light(); }}><Text style={[styles.chipText, { color: theme.textSecondary }]}>{s}</Text></PressableScale>
+          ))}
+        </View>
+      </StaggeredItem>
+      <StaggeredItem index={2}>
+        <GlassCard bubble={false} style={styles.chatCard}>
+          {messages.map((m, i) => (
+            <View key={i} style={[styles.bubbleRow, m.from === 'user' ? styles.userRow : styles.botRow]}>
+              {m.from === 'bot' && <View style={[styles.botAvatar, { backgroundColor: theme.accent }]}><Ionicons name="sparkles" size={14} color="#fff" /></View>}
+              <View style={[styles.bubble, m.from === 'user' ? { backgroundColor: theme.accent } : { backgroundColor: theme.surfaceAlt }]}>
+                <Text style={[styles.bubbleText, { color: m.from === 'user' ? '#fff' : theme.text }]}>{m.text}</Text>
               </View>
             </View>
-          </StaggeredItem>
-        ))}
-        {typing && (
-          <View style={styles.assistantRow}>
-            <View style={[styles.avatar, { backgroundColor: theme.accent }]}><Ionicons name="sparkles" size={14} color="#fff" /></View>
-            <View style={[styles.bubble, styles.assistantBubble, { backgroundColor: theme.surface }]}><Text style={[styles.typingText, { color: theme.textMuted }]}>…</Text></View>
-          </View>
-        )}
-      </ScrollView>
-      <View style={styles.suggestions}>
-        {aiSuggestions.slice(0, 2).map((s) => (
-          <PressableScale key={s} style={[styles.suggestion, { borderColor: theme.border }]} onPress={() => send(s)}><Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{s}</Text></PressableScale>
-        ))}
-      </View>
-      <View style={[styles.inputBar, { borderColor: theme.border }]}>
-        <TextInput value={input} onChangeText={setInput} placeholder="Ask MyTap to find…" placeholderTextColor={theme.textMuted} style={[styles.input, { color: theme.text }]} onSubmitEditing={() => send(input)} />
-        <PressableScale style={[styles.sendBtn, { backgroundColor: theme.accent }]} onPress={() => send(input)}><Ionicons name="arrow-up" size={20} color="#fff" /></PressableScale>
-      </View>
-    </KeyboardAvoidingView>
+          ))}
+          {typing && <View style={styles.typingRow}><View style={[styles.botAvatar, { backgroundColor: theme.accent }]}><Ionicons name="sparkles" size={14} color="#fff" /></View><View style={[styles.bubble, { backgroundColor: theme.surfaceAlt }]}><Text style={[styles.bubbleText, { color: theme.textMuted }]}>…</Text></View></View>}
+        </GlassCard>
+      </StaggeredItem>
+      <StaggeredItem index={3}>
+        <View style={[styles.inputRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+          <TextInput value={input} onChangeText={setInput} placeholder="Ask about your money…" placeholderTextColor={theme.textMuted} style={[styles.input, { color: theme.text }]} onSubmitEditing={send} />
+          <PressableScale style={[styles.sendBtn, { backgroundColor: theme.accent }]} onPress={send}><Ionicons name="arrow-up" size={20} color="#fff" /></PressableScale>
+        </View>
+      </StaggeredItem>
+    </ScreenContainer>
   );
 }
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.xxxl, paddingBottom: spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
-  headerInfo: { flex: 1 },
-  headerSub: { fontSize: 12 },
-  onlineDot: { width: 10, height: 10, borderRadius: 5, marginLeft: 'auto' },
-  chat: { flex: 1 },
-  chatContent: { padding: spacing.lg, paddingBottom: spacing.xl },
-  bubbleRow: { flexDirection: 'row', marginBottom: spacing.md, alignItems: 'flex-end' },
+  title: { fontSize: 20, fontWeight: '700' },
+  subtitle: { fontSize: 12 },
+  onlineDot: { width: 10, height: 10, borderRadius: 5 },
+  suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, borderWidth: 1 },
+  chipText: { fontSize: 12, fontWeight: '500' },
+  chatCard: { marginBottom: spacing.lg },
+  bubbleRow: { flexDirection: 'row', marginBottom: spacing.md, gap: spacing.sm },
   userRow: { justifyContent: 'flex-end' },
-  assistantRow: { justifyContent: 'flex-start', gap: spacing.sm },
-  avatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  bubble: { maxWidth: '78%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: radius.lg },
-  userBubble: { borderBottomRightRadius: 4 },
-  assistantBubble: { borderBottomLeftRadius: 4, borderWidth: 1 },
-  bubbleText: { fontSize: 15, lineHeight: 21 },
-  typingText: { fontSize: 20 },
-  suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
-  suggestion: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8 },
-  suggestionText: { fontSize: 13, fontWeight: '500' },
-  inputBar: { flexDirection: 'row', alignItems: 'center', margin: spacing.lg, borderWidth: 1, borderRadius: radius.pill, paddingLeft: spacing.lg, paddingRight: spacing.sm, paddingVertical: spacing.sm },
+  botRow: { justifyContent: 'flex-start' },
+  botAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end' },
+  bubble: { maxWidth: '80%', borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  bubbleText: { fontSize: 14, lineHeight: 20 },
+  typingRow: { flexDirection: 'row', gap: spacing.sm },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1, borderRadius: radius.pill, paddingLeft: spacing.lg, paddingRight: 4, paddingVertical: 4 },
   input: { flex: 1, fontSize: 15 },
   sendBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });
