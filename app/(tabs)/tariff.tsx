@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { ScreenContainer } from '../../src/components/ui/ScreenContainer';
@@ -23,6 +23,7 @@ export default function TariffScreen() {
   const t = state.tariff;
   const ringColor = t.usedPct < 60 ? '#2ECC71' : t.usedPct < 85 ? '#F5A623' : '#E74C3C';
   const addBundle = (gb: number) => { dispatch({ type: 'ADD_BUNDLE', gb }); setBundleModal(false); haptics.success(); show(`Added ${gb}GB to your bundle`); };
+
   return (
     <ScreenContainer>
       <StaggeredItem index={0}>
@@ -59,6 +60,11 @@ export default function TariffScreen() {
             <Text style={[styles.planRenew, { color: theme.textMuted }]}>Renews {shortDate(t.renews)}</Text>
             <PressableScale style={styles.manageBtn} onPress={() => { setBundleModal(true); haptics.medium(); }}><Ionicons name="add" size={16} color="#fff" /><Text style={styles.manageText}>Manage</Text></PressableScale>
           </View>
+          <PressableScale style={[styles.autoRenewRow, { borderColor: theme.border }]} onPress={() => { dispatch({ type: 'TOGGLE_AUTO_RENEW' }); haptics.toggle(); }}>
+            <Ionicons name="refresh" size={16} color={t.color} />
+            <Text style={[styles.autoRenewText, { color: theme.textSecondary }]}>Auto-renew</Text>
+            <View style={[styles.autoRenewToggle, { backgroundColor: t.autoRenew ? t.color : 'rgba(15,23,41,0.15)' }]}><View style={[styles.autoRenewKnob, { alignSelf: t.autoRenew ? 'flex-end' : 'flex-start' }]} /></View>
+          </PressableScale>
         </GlassCard>
       </StaggeredItem>
       <StaggeredItem index={3}>
@@ -76,10 +82,7 @@ export default function TariffScreen() {
       <StaggeredItem index={4}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Insights</Text>
         <GlassCard bubbleColor="rgba(245,166,35,0.15)">
-          <View style={styles.insightRow}>
-            <Ionicons name="bulb-outline" size={20} color="#F5A623" />
-            <Text style={[styles.insightText, { color: theme.textSecondary }]}>You're using data faster than usual. Consider adding a bundle before {shortDate(t.renews)}.</Text>
-          </View>
+          <View style={styles.insightRow}><Ionicons name="bulb-outline" size={20} color="#F5A623" /><Text style={[styles.insightText, { color: theme.textSecondary }]}>You're using data faster than usual. Consider adding a bundle before {shortDate(t.renews)}.</Text></View>
         </GlassCard>
       </StaggeredItem>
       <SlideUpModal visible={bundleModal} onClose={() => setBundleModal(false)}>
@@ -118,6 +121,10 @@ const styles = StyleSheet.create({
   planRenew: { fontSize: 13 },
   manageBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#2ECC71', paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.pill },
   manageText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  autoRenewRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginTop: spacing.lg },
+  autoRenewText: { flex: 1, fontSize: 13, fontWeight: '500' },
+  autoRenewToggle: { width: 40, height: 22, borderRadius: 11, padding: 2 },
+  autoRenewKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff' },
   sectionTitle: { fontSize: 18, fontWeight: '700', marginTop: spacing.xl, marginBottom: spacing.md },
   usageRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md },
   usageDivider: { borderTopWidth: 1, borderTopColor: 'rgba(15,23,41,0.06)' },

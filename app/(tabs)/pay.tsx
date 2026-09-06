@@ -27,21 +27,30 @@ export default function PayScreen() {
   const [amount, setAmount] = useState('');
   const [stage, setStage] = useState<PayStage>('idle');
   const [receipt, setReceipt] = useState<any>(null);
+
   const startPayment = () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) { show('Enter a valid amount', 'error'); return; }
-    setStage('confirm'); haptics.medium();
+    setStage('confirm');
+    haptics.medium();
   };
+
   const confirmPayment = () => {
-    setStage('processing'); haptics.processing();
+    setStage('processing');
+    haptics.processing();
     setTimeout(() => {
       const amt = parseFloat(amount);
       dispatch({ type: 'PAY', cardId: 'wallet', amount: amt, merchant: selected.name, category: selected.category, icon: selected.icon, color: selected.color });
-      setReceipt({ merchant: selected.name, amount: amt, date: new Date().toISOString(), ref: `MT-${Math.floor(100000 + Math.random() * 900000)}` });
-      setStage('success'); haptics.paymentSuccess();
+      const r = { id: `r-${Date.now()}`, merchant: selected.name, category: selected.category, amount: amt, date: new Date().toISOString(), ref: `MT-${Math.floor(100000 + Math.random() * 900000)}`, method: 'MyTap Wallet', status: 'completed' as const, icon: selected.icon, color: selected.color };
+      dispatch({ type: 'ADD_RECEIPT', receipt: r });
+      setReceipt(r);
+      setStage('success');
+      haptics.paymentSuccess();
     }, 800);
   };
+
   const closeSuccess = () => { setStage('idle'); setAmount(''); setReceipt(null); };
+
   return (
     <ScreenContainer>
       <StaggeredItem index={0}>
@@ -141,7 +150,9 @@ function SuccessCheck() {
     opacity.value = withTiming(1, { duration: 300 });
   }, [scale, opacity]);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: opacity.value }));
-  return <Animated.View style={[styles.successCircle, style]}><Ionicons name="checkmark" size={40} color="#fff" /></Animated.View>;
+  return (
+    <Animated.View style={[styles.successCircle, style]}><Ionicons name="checkmark" size={40} color="#fff" /></Animated.View>
+  );
 }
 
 const styles = StyleSheet.create({
