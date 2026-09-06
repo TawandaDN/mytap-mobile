@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { Pressable, PressableProps, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
-import { springConfig } from '../../theme';
 import { haptics } from '../../utils/haptics';
 
 /**
@@ -33,7 +33,7 @@ export function PressableScale({
   const scale = useSharedValue(1);
 
   useEffect(() => {
-    scale.value = withSpring(1, springConfig);
+    scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
   }, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -45,14 +45,14 @@ export function PressableScale({
       <Pressable
         {...rest}
         onPressIn={() => {
-          scale.value = withSpring(scaleTo, springConfig);
+          scale.value = withTiming(scaleTo, { duration: 300, easing: Easing.out(Easing.cubic) });
           if (haptic === 'pressIn') haptics.pressIn();
           else if (haptic === 'light') haptics.light();
           else if (haptic === 'medium') haptics.medium();
           onPressIn?.();
         }}
         onPressOut={() => {
-          scale.value = withSpring(1, springConfig);
+          scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
           haptics.pressOut();
           onPressOut?.();
         }}
