@@ -4,11 +4,10 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
-import { radius, spring } from '../../theme';
+import { radius } from '../../theme';
 
 /**
  * Modal that slides up with a 400ms spring bounce.
@@ -30,11 +29,11 @@ export function SlideUpModal({
 
   useEffect(() => {
     if (visible) {
-      translateY.value = withSpring(0, spring);
+      translateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
       backdrop.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
     } else {
-      translateY.value = withTiming(600, { duration: 300 });
-      backdrop.value = withTiming(0, { duration: 300 });
+      translateY.value = withTiming(600, { duration: 300, easing: Easing.out(Easing.cubic) });
+      backdrop.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
     }
   }, [visible, translateY, backdrop]);
 
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(15,23,41,0.5)',
   },
   sheet: {
