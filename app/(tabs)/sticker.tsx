@@ -55,7 +55,7 @@ export default function StickerScreen() {
 
       {state.stickers.map((s, i) => (
         <StaggeredItem key={s.id} index={i + 1}>
-          <TiltCard style={styles.stickerCard} maxTilt={4}>
+          <TiltCard style={styles.stickerCard}>
             <GlassCard
               bubbleColor={s.status === 'active' ? 'rgba(46,204,113,0.2)' : 'rgba(231,76,60,0.15)'}
               style={styles.stickerInner}

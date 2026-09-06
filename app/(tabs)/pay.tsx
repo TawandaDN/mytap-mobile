@@ -6,7 +6,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../src/theme/ThemeContext';
@@ -15,7 +14,8 @@ import { GlassCard } from '../../src/components/cards/GlassCard';
 import { StaggeredItem } from '../../src/components/animations/Staggered';
 import { Button } from '../../src/components/ui/Button';
 import { SlideUpModal } from '../../src/components/ui/SlideUpModal';
-import { Confetti } from '../../src/components/animations/Confetti';
+import { ShimmerLoader } from '../../src/components/ui/ShimmerLoader';
+import { SuccessCheck } from '../../src/components/ui/SuccessCheck';
 import { TapToPay } from '../../src/components/pay/TapToPay';
 import { useToast } from '../../src/components/ui/Toast';
 import { useApp } from '../../src/store/AppStore';
@@ -210,19 +210,18 @@ export default function PayScreen() {
           </Text>
         </View>
         <Button title="Confirm & pay" onPress={confirmPayment} style={styles.modalBtn} />
-      </SlideUpModal>
+      </SlideModal>
 
       {/* Processing modal */}
-      <SlideUpModal visible={stage === 'processing'} onClose={() => {}}>
+      <SlideModal visible={stage === 'processing'} onClose={() => {}}>
         <View style={styles.processingWrap}>
-          <PulseSpinner />
+          <ShimmerLoader />
           <Text style={[styles.processingText, { color: theme.text }]}>Processing payment…</Text>
         </View>
-      </SlideUpModal>
+      </SlideModal>
 
       {/* Success modal */}
-      <SlideUpModal visible={stage === 'success'} onClose={closeSuccess}>
-        <Confetti active={stage === 'success'} />
+      <SlideModal visible={stage === 'success'} onClose={closeSuccess}>
         <View style={styles.successWrap}>
           <SuccessCheck />
           <Text style={[styles.successTitle, { color: theme.text }]}>Payment successful!</Text>
@@ -252,56 +251,8 @@ export default function PayScreen() {
           </GlassCard>
         )}
         <Button title="Done" onPress={closeSuccess} style={styles.modalBtn} />
-      </SlideUpModal>
+      </SlideModal>
     </ScreenContainer>
-  );
-}
-
-function PulseSpinner() {
-  const { theme } = useTheme();
-  const pulse = useSharedValue(0);
-  const rotate = useSharedValue(0);
-
-  React.useEffect(() => {
-    pulse.value = withRepeat(withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) }), -1, true);
-    rotate.value = withRepeat(withTiming(360, { duration: 1000, easing: Easing.linear }), -1, false);
-  }, [pulse, rotate]);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.2 }],
-    opacity: 1 - pulse.value * 0.3,
-  }));
-
-  const rotStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotate.value}deg` }],
-  }));
-
-  return (
-    <View style={styles.spinnerWrap}>
-      <Animated.View style={[styles.spinnerRing, { borderColor: theme.glassBorder, borderTopColor: theme.accent }, rotStyle]} />
-      <Animated.View style={[styles.spinnerPulse, { backgroundColor: theme.accent + '33' }, pulseStyle]} />
-    </View>
-  );
-}
-
-function SuccessCheck() {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
-
-  React.useEffect(() => {
-    scale.value = withSpring(1, { damping: 0.8, stiffness: 100, mass: 0.8 });
-    opacity.value = withTiming(1, { duration: 300 });
-  }, [scale, opacity]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View style={[styles.successCircle, style]}>
-      <Ionicons name="checkmark" size={40} color="#fff" />
-    </Animated.View>
   );
 }
 
