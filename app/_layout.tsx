@@ -4,7 +4,14 @@ import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useFonts, Inter_300Light, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import {
+  useFonts,
+  Inter_300Light,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { AppProvider, useApp } from '../src/store/AppStore';
 import { ToastProvider } from '../src/components/ui/Toast';
@@ -22,7 +29,13 @@ function RootNavigator() {
       {state.biometricEnabled && !unlocked ? (
         <BiometricLock onUnlock={() => setUnlocked(true)} />
       ) : (
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background }, animation: 'fade' }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: theme.background },
+            animation: 'fade',
+          }}
+        >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="guardrail" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="assistant" options={{ animation: 'slide_from_right' }} />
@@ -42,6 +55,8 @@ function RootNavigator() {
           <Stack.Screen name="send" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="qr" options={{ animation: 'fade' }} />
           <Stack.Screen name="data-bundles" options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="insights" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="appearance" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="about" options={{ animation: 'slide_from_right' }} />
         </Stack>
       )}
@@ -50,8 +65,18 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Inter_300Light, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
-  if (!fontsLoaded) return null;
+  const [fontsLoaded] = useFonts({
+    Inter_300Light,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>

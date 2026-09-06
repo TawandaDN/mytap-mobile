@@ -67,25 +67,23 @@ export function AnimatedBackground({
   }));
 
   const isDark = theme.mode === 'dark';
+  const [g0, g1, g2] = theme.gradient;
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient
-        colors={
-          isDark
-            ? ['#0F1729', '#16233B', '#1E3A5F']
-            : ['#F5F7FA', '#EEF1F6', '#E8ECF4']
-        }
+        colors={isDark ? [g0, g1, g2] : ['#F5F7FA', '#EEF1F6', '#E8ECF4']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
+      {/* Drifting glow orbs */}
       <Animated.View style={[styles.orb, styles.orb1, orb1]}>
         <LinearGradient
           colors={
             isDark
-              ? ['rgba(107,58,138,0.25)', 'rgba(255,107,74,0.12)']
-              : ['rgba(107,58,138,0.12)', 'rgba(255,107,74,0.05)']
+              ? [`${theme.accent}55`, `${theme.accent2}22`]
+              : [`${theme.accent}22`, `${theme.accent2}0D`]
           }
           style={StyleSheet.absoluteFill}
         />
