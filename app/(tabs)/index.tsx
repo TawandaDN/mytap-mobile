@@ -4,13 +4,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { ScreenContainer } from '../../src/components/ui/ScreenContainer';
-import { CardCarousel } from '../../src/components/cards/CardCarousel';
 import { GlassCard } from '../../src/components/cards/GlassCard';
+import { HomeCard } from '../../src/components/cards/HomeCard';
+import { QuickActionsGrid, QuickAction } from '../../src/components/ui/QuickActionsGrid';
 import { StaggeredItem } from '../../src/components/animations/Staggered';
 import { Typewriter } from '../../src/components/animations/Typewriter';
 import { CountUp } from '../../src/components/animations/CountUp';
+import { Sparkline } from '../../src/components/charts/Sparkline';
 import { useApp } from '../../src/store/AppStore';
 import { greetingForHour, formatPx, shortDate, guardrailProfile } from '../../src/utils/format';
+import { buildInsights } from '../../src/utils/insights';
 import { spacing } from '../../src/theme';
 import { haptics } from '../../src/utils/haptics';
 import { PressableScale } from '../../src/components/ui/PressableScale';
@@ -20,13 +23,35 @@ export default function HomeScreen() {
   const { state } = useApp();
   const router = useRouter();
   const greeting = greetingForHour(new Date().getHours());
+  const primaryCard = state.cards[0];
+  const insights = buildInsights(state.transactions);
+  const topInsight = insights[0];
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     { icon: 'send', label: 'Send', color: '#2ECC71', route: '/send' },
-    { icon: 'scan', label: 'Scan', color: '#3498DB', route: '/qr' },
-    { icon: 'add', label: 'Add', color: '#F5A623', route: '/cards' },
-    { icon: 'arrow-up-circle', label: 'Top-up', color: '#FF6B4A', route: '/airtime' },
+    { icon: 'card', label: 'Pay', color: '#3498DB', route: '/pay' },
+    { icon: 'radio', label: 'Tap to Pay', color: '#6B3A8A', route: '/pay' },
+    { icon: 'add', label: 'Top up', color: '#F5A623', route: '/cards' },
+    { icon: 'phone-portrait', label: 'Airtime', color: '#E67E22', route: '/airtime' },
+    { icon: 'cellular', label: 'Data', color: '#2ECC71', route: '/data-bundles' },
+    { icon: 'flash', label: 'Bills', color: '#FF6B4A', route: '/utilities' },
+    { icon: 'qr-code', label: 'QR', color: '#8A4A9A', route: '/qr' },
   ];
+
+  const go = (route: string) => {
+    haptics.medium();
+    router.push(route as any);
+  };
+
+  // Ledger sparkline data from recent transactions (cumulative balance)
+  const sparkData = state.transactions
+    .slice(0, 8)
+    .reverse()
+    .reduce<number[]>((acc, tx) => {
+      const last = acc.length ? acc[acc.length - 1] : primaryCard.balance;
+      acc.push(Math.max(0, last + tx.amount));
+      return acc;
+    }, []);
 
   return (
     <ScreenContainer>
@@ -50,56 +75,32 @@ export default function HomeScreen() {
         </View>
       </StaggeredItem>
 
-      {/* Wallet cards carousel */}
+      {/* Hero balance + primary card (Framer Motion) */}
       <StaggeredItem index={1}>
-        <CardCarousel cards={state.cards} />
-      </StaggeredItem>
-
-      {/* Quick actions */}
-      <StaggeredItem index={2}>
-        <View style={styles.quickRow}>
-          {quickActions.map((a) => (
-            <PressableScale key={a.label} style={styles.quickItem} onPress={() => { haptics.medium(); router.push(a.route as any); }}>
-              <View style={[styles.quickIcon, { backgroundColor: a.color + '22' }]}>
-                <Ionicons name={a.icon as any} size={22} color={a.color} />
-              </View>
-              <Text style={[styles.quickLabel, { color: theme.textSecondary }]}>{a.label}</Text>
-            </PressableScale>
-          ))}
+        <View style={styles.hero}>
+          <Text style={[styles.heroLabel, { color: theme.textMuted }]}>Total balance</Text>
+          <CountUp value={primaryCard.balance} format={(v) => `P${v.toLocaleString('en-BW', { minimumFractionDigits: 2 })}`} glow="emerald" style={[styles.heroBalance, { color: theme.text }]} />
         </View>
+        <HomeCard card={primaryCard} sparkData={sparkData} onPress={() => go('/cards')} />
       </StaggeredItem>
 
-      {/* MyTap Day card */}
+      {/* Quick actions grid */}
+      <StaggeredItem index={2}>
+        <QuickActionsGrid actions={quickActions} onPress={go} />
+      </StaggeredItem>
+
+      {/* Live insights snapshot */}
       <StaggeredItem index={3}>
-        <GlassCard style={styles.dayCard} bubbleColor="rgba(245,166,35,0.2)">
-          <View style={styles.dayHeader}>
-            <View>
-              <Text style={[styles.dayTitle, { color: theme.text }]}>MyTap Day</Text>
-              <Text style={[styles.daySub, { color: theme.textMuted }]}>Your daily reward is ready</Text>
-            </View>
-            <View style={styles.dayBadge}>
-              <Text style={styles.dayBadgeText}>Ready</Text>
-            </View>
-          </View>
-          <View style={styles.dayReward}>
-            <Text style={[styles.dayRewardLabel, { color: theme.textMuted }]}>Today's reward</Text>
-            <CountUp value={12.5} format={(v) => `P${v.toFixed(2)}`} glow="gold" style={[styles.dayRewardValue, { color: theme.text }]} />
-          </View>
-        </GlassCard>
-      </StaggeredItem>
-
-      {/* Insights entry */}
-      <StaggeredItem index={4}>
-        <PressableScale onPress={() => { haptics.medium(); router.push('/insights'); }}>
+        <PressableScale onPress={() => go('/insights')}>
           <GlassCard bubbleColor={`${theme.accent}22`} style={styles.insightCard}>
             <View style={styles.insightRow}>
-              <View style={[styles.insightIcon, { backgroundColor: theme.accent + '22' }]}>
-                <Ionicons name="sparkles" size={20} color={theme.accent} />
+              <View style={[styles.insightIcon, { backgroundColor: (topInsight?.color || theme.accent) + '22' }]}>
+                <Ionicons name={topInsight?.icon as any || 'sparkles'} size={20} color={topInsight?.color || theme.accent} />
               </View>
               <View style={styles.insightInfo}>
-                <Text style={[styles.insightTitle, { color: theme.text }]}>Your insights</Text>
-                <Text style={[styles.insightSub, { color: theme.textMuted }]}>
-                  Groceries up 18% · Save P320 on data
+                <Text style={[styles.insightTitle, { color: theme.text }]}>{topInsight?.title || 'Your insights'}</Text>
+                <Text style={[styles.insightSub, { color: theme.textMuted }]} numberOfLines={1}>
+                  {topInsight?.body || 'Tap to see your personalized insights'}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
@@ -108,15 +109,19 @@ export default function HomeScreen() {
         </PressableScale>
       </StaggeredItem>
 
-      {/* Recent transactions */}
-      <StaggeredItem index={5}>
+      {/* Recent transactions with animated sparkline */}
+      <StaggeredItem index={4}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent transactions</Text>
-          <PressableScale onPress={() => { haptics.light(); router.push('/transactions'); }}>
+          <PressableScale onPress={() => go('/transactions')}>
             <Text style={[styles.seeAll, { color: theme.accent }]}>See all</Text>
           </PressableScale>
         </View>
         <GlassCard bubble={false}>
+          <View style={styles.spending}>
+            <Text style={[styles.sparkTitle, { color: theme.textMuted }]}>Spending trend</Text>
+            <Sparkline data={sparkData} width={140} height={36} color={theme.accent} />
+          </View>
           {state.transactions.slice(0, 3).map((tx, i) => (
             <View key={tx.id} style={[styles.txRow, i > 0 && styles.txDivider]}>
               <View style={[styles.txIcon, { backgroundColor: tx.color + '22' }]}>
@@ -133,7 +138,7 @@ export default function HomeScreen() {
       </StaggeredItem>
 
       {/* Guardrail preview */}
-      <StaggeredItem index={6}>
+      <StaggeredItem index={5}>
         <GlassCard bubble={false}>
           <View style={styles.guardrailHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>MyTap Guardrail</Text>
@@ -177,65 +182,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+  hero: {
+    marginBottom: spacing.lg,
   },
-  quickItem: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  quickIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  dayCard: {
-    marginBottom: spacing.xl,
-  },
-  dayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dayTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  daySub: {
+  heroLabel: {
     fontSize: 13,
-    marginTop: 2,
+    marginBottom: 2,
   },
-  dayBadge: {
-    backgroundColor: '#2ECC71',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 999,
-  },
-  dayBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dayReward: {
-    marginTop: spacing.lg,
-  },
-  dayRewardLabel: {
-    fontSize: 13,
-  },
-  dayRewardValue: {
-    fontSize: 32,
+  heroBalance: {
+    fontSize: 40,
     fontWeight: '700',
   },
   insightCard: {
+    marginTop: spacing.xl,
     marginBottom: spacing.xl,
   },
   insightRow: {
@@ -274,6 +233,15 @@ const styles = StyleSheet.create({
   seeAll: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  spending: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  sparkTitle: {
+    fontSize: 13,
   },
   txRow: {
     flexDirection: 'row',
