@@ -98,7 +98,7 @@ export function CardCarousel({ cards }: { cards: WalletCard[] }) {
 
 const styles = StyleSheet.create({
   carousel: {
-    height: 240,
+    height: 260,
     overflow: 'hidden',
   },
   inner: {
