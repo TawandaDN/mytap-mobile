@@ -52,7 +52,7 @@ export default function PayScreen() {
   const confirmPayment = () => {
     setStage('processing');
     haptics.processing();
-    // Acoustic taptic double-pop (Apple-Pay-style physical transaction sound)
+    // Acoustic taptic double-pop (ApplePay-style physical transaction sound)
     playTapticPayment();
     setTimeout(() => {
       const amt = parseFloat(amount);
@@ -213,7 +213,7 @@ export default function PayScreen() {
           </Text>
         </View>
         <Button title="Confirm & pay" onPress={confirmPayment} style={styles.modalBtn} />
-      </SlideModal>
+      </SlideUpModal>
 
       {/* Processing modal */}
       <SlideUpModal visible={stage === 'processing'} onClose={() => {}}>
