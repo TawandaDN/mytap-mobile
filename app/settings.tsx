@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
-import { GlassCard } from '../src/components/cards/GlassCard';
+import { SettingsGroup } from '../src/components/ui/SettingsGroup';
 import { StaggeredItem } from '../src/components/animations/Staggered';
 import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
-import { spacing, type, radius } from '../src/theme';
+import { spacing } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
@@ -19,6 +19,11 @@ export default function SettingsScreen() {
   const { show } = useToast();
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  const go = (path: any) => {
+    haptics.medium();
+    router.push(path);
+  };
 
   return (
     <ScreenContainer>
@@ -31,125 +36,116 @@ export default function SettingsScreen() {
         </View>
       </StaggeredItem>
 
+      {/* Account */}
       <StaggeredItem index={1}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Appearance</Text>
-        <GlassCard bubble={false}>
-          <SettingRow
-            icon="color-palette"
-            iconColor="#6B3A8A"
-            label="Theme & appearance"
-            theme={theme}
-            right={
-              <PressableScale onPress={() => { haptics.medium(); router.push('/appearance'); }}>
-                <View style={styles.linkRow}>
-                  <Text style={[styles.linkText, { color: theme.accent }]}>Customize</Text>
-                  <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
-                </View>
-              </PressableScale>
-            }
-          />
-          <SettingRow
-            icon="moon"
-            iconColor="#6B3A8A"
-            label="Dark mode"
-            theme={theme}
-            right={
-              <Switch
-                value={mode === 'dark'}
-                onValueChange={() => { toggleMode(); haptics.toggle(); }}
-                trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
-                thumbColor="#fff"
-              />
-            }
-          />
-        </GlassCard>
+        <SettingsGroup
+          title="Account"
+          icon="person-circle-outline"
+          items={[
+            { icon: 'person', iconColor: '#3498DB', label: 'Profile', onPress: () => go('/profile') },
+            { icon: 'shield-checkmark', iconColor: '#2ECC71', label: 'KYC status', right: <Text style={[styles.value, { color: '#2ECC71' }]}>Verified</Text> },
+            { icon: 'card', iconColor: '#6B3A8A', label: 'My cards', onPress: () => go('/cards') },
+          ]}
+        />
       </StaggeredItem>
 
+      {/* Security */}
       <StaggeredItem index={2}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Notifications</Text>
-        <GlassCard bubble={false}>
-          <SettingRow
-            icon="notifications"
-            iconColor="#F5A623"
-            label="Push notifications"
-            theme={theme}
-            right={
-              <Switch
-                value={notifEnabled}
-                onValueChange={() => { setNotifEnabled(!notifEnabled); haptics.toggle(); }}
-                trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
-                thumbColor="#fff"
-              />
-            }
-          />
-          <SettingRow
-            icon="volume-high"
-            iconColor="#3498DB"
-            label="Sound effects"
-            theme={theme}
-            right={
-              <Switch
-                value={soundEnabled}
-                onValueChange={() => { setSoundEnabled(!soundEnabled); haptics.toggle(); }}
-                trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
-                thumbColor="#fff"
-              />
-            }
-          />
-        </GlassCard>
+        <SettingsGroup
+          title="Security"
+          icon="lock-closed-outline"
+          items={[
+            {
+              icon: 'finger-print',
+              iconColor: '#2ECC71',
+              label: 'Biometric login',
+              right: (
+                <Switch
+                  value={state.biometricEnabled}
+                  onValueChange={(v) => { dispatch({ type: 'SET_BIOMETRIC', enabled: v }); haptics.toggle(); show(v ? 'Biometric login enabled' : 'Biometric login disabled'); }}
+                  trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
+                  thumbColor="#fff"
+                />
+              ),
+            },
+            { icon: 'key', iconColor: '#F5A623', label: 'Change PIN', onPress: () => show('PIN change coming soon', 'info') },
+          ]}
+        />
       </StaggeredItem>
 
+      {/* Appearance */}
       <StaggeredItem index={3}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Security</Text>
-        <GlassCard bubble={false}>
-          <SettingRow
-            icon="finger-print"
-            iconColor="#2ECC71"
-            label="Biometric login"
-            theme={theme}
-            right={
-              <Switch
-                value={state.biometricEnabled}
-                onValueChange={(v) => { dispatch({ type: 'SET_BIOMETRIC', enabled: v }); haptics.toggle(); show(v ? 'Biometric login enabled' : 'Biometric login disabled'); }}
-                trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
-                thumbColor="#fff"
-              />
-            }
-          />
-        </GlassCard>
+        <SettingsGroup
+          title="Appearance"
+          icon="color-palette-outline"
+          items={[
+            { icon: 'color-palette', iconColor: '#6B3A8A', label: 'Theme & appearance', onPress: () => go('/appearance') },
+            {
+              icon: 'moon',
+              iconColor: '#6B3A8A',
+              label: 'Dark mode',
+              right: (
+                <Switch
+                  value={mode === 'dark'}
+                  onValueChange={() => { toggleMode(); haptics.toggle(); }}
+                  trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
+                  thumbColor="#fff"
+                />
+              ),
+            },
+          ]}
+        />
       </StaggeredItem>
 
+      {/* Notifications */}
       <StaggeredItem index={4}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>About</Text>
-        <GlassCard bubble={false}>
-          <SettingRow icon="information-circle" iconColor="#6B7A8A" label="Version" theme={theme} right={<Text style={[styles.version, { color: theme.textMuted }]}>2.0.0</Text>} />
-        </GlassCard>
+        <SettingsGroup
+          title="Notifications"
+          icon="notifications-outline"
+          items={[
+            {
+              icon: 'notifications',
+              iconColor: '#F5A623',
+              label: 'Push notifications',
+              right: (
+                <Switch
+                  value={notifEnabled}
+                  onValueChange={() => { setNotifEnabled(!notifEnabled); haptics.toggle(); }}
+                  trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
+                  thumbColor="#fff"
+                />
+              ),
+            },
+            {
+              icon: 'volume-high',
+              iconColor: '#3498DB',
+              label: 'Sound effects',
+              right: (
+                <Switch
+                  value={soundEnabled}
+                  onValueChange={() => { setSoundEnabled(!soundEnabled); haptics.toggle(); }}
+                  trackColor={{ true: theme.accent, false: 'rgba(15,23,41,0.2)' }}
+                  thumbColor="#fff"
+                />
+              ),
+            },
+          ]}
+        />
+      </StaggeredItem>
+
+      {/* Help */}
+      <StaggeredItem index={5}>
+        <SettingsGroup
+          title="Help"
+          icon="help-circle-outline"
+          items={[
+            { icon: 'help-circle', iconColor: '#FF6B4A', label: 'Help & support', onPress: () => go('/help') },
+            { icon: 'information-circle', iconColor: '#8A4A9A', label: 'About', onPress: () => go('/about') },
+            { icon: 'document-text', iconColor: '#6B7A8A', label: 'Version', right: <Text style={[styles.value, { color: theme.textMuted }]}>2.0.0</Text> },
+          ]}
+        />
       </StaggeredItem>
     </ScreenContainer>
-  );
-}
-
-function SettingRow({
-  icon,
-  iconColor,
-  label,
-  theme,
-  right,
-}: {
-  icon: any;
-  iconColor: string;
-  label: string;
-  theme: any;
-  right: React.ReactNode;
-}) {
-  return (
-    <View style={styles.row}>
-      <View style={[styles.rowIcon, { backgroundColor: iconColor + '22' }]}>
-        <Ionicons name={icon} size={18} color={iconColor} />
-      </View>
-      <Text style={[styles.rowLabel, { color: theme.text }]}>{label}</Text>
-      <View style={styles.rowRight}>{right}</View>
-    </View>
   );
 }
 
@@ -173,43 +169,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  rowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  rowRight: {
-    alignItems: 'flex-end',
-  },
-  linkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  linkText: {
+  value: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  version: {
-    fontSize: 14,
   },
 });

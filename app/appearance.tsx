@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../src/theme/ThemeContext';
-import { THEME_LIST, ThemeId } from '../src/theme';
+import { useSkin } from '../src/theme/SkinContext';
+import { THEME_LIST, ThemeId, SKIN_LIST, SkinId } from '../src/theme';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
 import { StaggeredItem } from '../src/components/animations/Staggered';
@@ -14,6 +15,7 @@ import { PressableScale } from '../src/components/ui/PressableScale';
 
 export default function AppearanceScreen() {
   const { theme, themeId, setThemeId, adaptive, setAdaptive, mode, setMode } = useTheme();
+  const { skinId, setSkinId } = useSkin();
   const router = useRouter();
 
   return (
@@ -99,6 +101,40 @@ export default function AppearanceScreen() {
                 </LinearGradient>
                 <Text style={[styles.themeName, { color: active ? theme.accent : theme.text }]}>
                   {t.name}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
+      </StaggeredItem>
+    {/* Texture skin picker */}
+      <StaggeredItem index={4}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Material skin</Text>
+        <Text style={[styles.skinSub, { color: theme.textMuted }]}>
+          Change the surface texture & material feel
+        </Text>
+        <View style={styles.skinGrid}>
+          {SKIN_LIST.map((s) => {
+            const active = skinId === s.id;
+            return (
+              <PressableScale
+                key={s.id}
+                style={[styles.skinCard, { borderColor: active ? theme.accent : theme.border }]}
+                onPress={() => { setSkinId(s.id as SkinId); haptics.selection(); }}
+              >
+                <View style={[styles.skinSwatch, { backgroundColor: s.glassBg, borderColor: s.glassBorder }]}>
+                  <Text style={styles.skinEmoji}>{s.emoji}</Text>
+                  {active && (
+                    <View style={styles.checkBadge}>
+                      <Ionicons name="checkmark" size={14} color="#fff" />
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.skinName, { color: active ? theme.accent : theme.text }]}>
+                  {s.name}
+                </Text>
+                <Text style={[styles.skinMaterial, { color: theme.textMuted }]} numberOfLines={1}>
+                  {s.material}
                 </Text>
               </PressableScale>
             );
@@ -240,6 +276,43 @@ const styles = StyleSheet.create({
   themeName: {
     fontSize: 12,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  skinSub: {
+    fontSize: 13,
+    marginBottom: spacing.md,
+  },
+  skinGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  skinCard: {
+    width: '47%',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.sm,
+    alignItems: 'center',
+    gap: 6,
+  },
+  skinSwatch: {
+    width: '100%',
+    height: 56,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skinEmoji: {
+    fontSize: 24,
+  },
+  skinName: {
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  skinMaterial: {
+    fontSize: 10,
     textAlign: 'center',
   },
 });
