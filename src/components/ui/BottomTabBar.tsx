@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
+import { useSkin } from '../../theme/SkinContext';
 import { radius, shadows, spacing, type } from '../../theme';
 import { haptics } from '../../utils/haptics';
 
@@ -34,6 +35,7 @@ export function BottomTabBar({
   onChange: (k: TabKey) => void;
 }) {
   const { theme } = useTheme();
+  const { skin } = useSkin();
   const activeIndex = TABS.findIndex((t) => t.key === active);
   const indicatorX = useSharedValue(activeIndex * (100 / TABS.length));
 
@@ -51,6 +53,8 @@ export function BottomTabBar({
   return (
     <View style={styles.wrap} pointerEvents="box-none">
       <BlurView intensity={40} tint="light" style={styles.bar}>
+        {/* Skin sheen overlay */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: skin.sheen }]} />
         {/* Sliding active indicator */}
         <Animated.View
           style={[

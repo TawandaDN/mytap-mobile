@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
+import { useSkin } from '../../theme/SkinContext';
 import { radius, shadows } from '../../theme';
 import { WaterBubble } from '../animations/WaterBubble';
 import { haptics } from '../../utils/haptics';
@@ -36,6 +37,7 @@ export function GlassCard({
   pressable?: boolean;
 }) {
   const { theme } = useTheme();
+  const { skin } = useSkin();
   const scale = useSharedValue(1);
 
   useEffect(() => {
@@ -50,6 +52,9 @@ export function GlassCard({
   const content = (
     <>
       <BlurView intensity={blur} tint="light" style={StyleSheet.absoluteFill} />
+      {/* Skin texture + sheen overlay for material depth */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: skin.texture }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: skin.sheen }]} />
       {bubble && <WaterBubble color={bubbleColor} />}
       <View style={styles.content}>{children}</View>
     </>
@@ -59,8 +64,11 @@ export function GlassCard({
     styles.card,
     {
       backgroundColor: theme.glassBg,
-      borderColor: theme.glassBorder,
+      borderColor: skin.glassBorder,
       shadowColor: theme.glassShadow,
+      shadowOpacity: 0.1 * skin.shadowDepth,
+      shadowRadius: 16 * skin.shadowDepth,
+      elevation: 4 * skin.shadowDepth,
     },
     style,
   ];

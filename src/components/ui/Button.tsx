@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Pressable } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
+import { useSkin } from '../../theme/SkinContext';
 import { radius, shadows, spacing, type } from '../../theme';
 import { haptics } from '../../utils/haptics';
 import { WaterBubble } from '../animations/WaterBubble';
@@ -36,6 +37,7 @@ export function Button({
   icon?: React.ReactNode;
 }) {
   const { theme } = useTheme();
+  const { skin } = useSkin();
   const scale = useSharedValue(1);
 
   useEffect(() => {
@@ -53,8 +55,8 @@ export function Button({
   };
 
   const gradientColors: Record<Variant, readonly [string, string, string]> = {
-    primary: ['#1E3A5F', '#2D3B6B', '#FF6B4A'],
-    secondary: ['#2D3B6B', '#4A6A8A', '#F5A623'],
+    primary: [...theme.accentGradient],
+    secondary: [...theme.accentGradient],
     gold: ['#F5A623', '#FFB84D', '#FF6B4A'],
     danger: ['#E74C3C', '#C0392B', '#8E44AD'],
     ghost: ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.1)'],
