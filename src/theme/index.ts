@@ -191,17 +191,27 @@ export const THEME_LIST: ThemeDef[] = Object.values(THEMES);
 export const lightTheme: Theme = THEMES.midnight.light;
 export const darkTheme: Theme = THEMES.midnight.dark;
 
-/** Full Inter type scale (pt). */
+/** Font family — Plus Jakarta Sans loaded via expo-font. */
+export const fonts = {
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semibold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+  extrabold: 'PlusJakartaSans_800ExtraBold',
+  light: 'PlusJakartaSans_300Light',
+} as const;
+
+/** Full Plus Jakarta Sans type scale (pt). */
 export const type = {
-  hero: { fontSize: 48, lineHeight: 56, fontWeight: '300' as const },
-  largeTitle: { fontSize: 32, lineHeight: 40, fontWeight: '600' as const },
-  title: { fontSize: 24, lineHeight: 32, fontWeight: '700' as const },
-  heading: { fontSize: 20, lineHeight: 28, fontWeight: '600' as const },
-  subheading: { fontSize: 17, lineHeight: 24, fontWeight: '500' as const },
-  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
-  caption: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const },
-  label: { fontSize: 11, lineHeight: 16, fontWeight: '500' as const },
-  small: { fontSize: 10, lineHeight: 14, fontWeight: '400' as const },
+  hero: { fontSize: 48, lineHeight: 56, fontWeight: '300' as const, fontFamily: fonts.light },
+  largeTitle: { fontSize: 32, lineHeight: 40, fontWeight: '600' as const, fontFamily: fonts.semibold },
+  title: { fontSize: 24, lineHeight: 32, fontWeight: '700' as const, fontFamily: fonts.bold },
+  heading: { fontSize: 20, lineHeight: 28, fontWeight: '600' as const, fontFamily: fonts.semibold },
+  subheading: { fontSize: 17, lineHeight: 24, fontWeight: '500' as const, fontFamily: fonts.medium },
+  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const, fontFamily: fonts.regular },
+  caption: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const, fontFamily: fonts.regular },
+  label: { fontSize: 11, lineHeight: 16, fontWeight: '500' as const, fontFamily: fonts.medium },
+  small: { fontSize: 10, lineHeight: 14, fontWeight: '400' as const, fontFamily: fonts.regular },
 } as const;
 
 /** 4px grid spacing. */
@@ -274,14 +284,87 @@ export const springConfig = {
   restSpeedThreshold: 0.01,
 } as const;
 
-/** Font family — Inter loaded via expo-font. */
-export const fonts = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  light: 'Inter_300Light',
-} as const;
+/* ============ TEXTURE SKINS ============ */
+
+export type SkinId = 'frosted' | 'obsidian' | 'quartz' | 'velvet';
+
+export interface Skin {
+  id: SkinId;
+  name: string;
+  emoji: string;
+  /** Glass surface tint. */
+  glassBg: string;
+  glassBorder: string;
+  /** Subtle repeating texture overlay (rgba). */
+  texture: string;
+  /** Material feel label. */
+  material: string;
+  /** Shadow depth multiplier (0.6 soft → 1.4 deep). */
+  shadowDepth: number;
+  /** Top inner highlight for embossed depth. */
+  highlight: string;
+  /** Inset shadow for inset/embossed elements. */
+  inset: string;
+  /** Brushed-metal sheen overlay (rgba). */
+  sheen: string;
+}
+
+export const SKINS: Record<SkinId, Skin> = {
+  frosted: {
+    id: 'frosted',
+    name: 'Frosted Glass',
+    emoji: '🧊',
+    glassBg: 'rgba(255,255,255,0.55)',
+    glassBorder: 'rgba(255,255,255,0.7)',
+    texture: 'rgba(255,255,255,0.02)',
+    material: 'Translucent frosted glass',
+    shadowDepth: 1,
+    highlight: 'rgba(255,255,255,0.5)',
+    inset: 'rgba(15,23,41,0.06)',
+    sheen: 'rgba(255,255,255,0.08)',
+  },
+  obsidian: {
+    id: 'obsidian',
+    name: 'Obsidian Ceramic & Brushed Alloy',
+    emoji: '🖤',
+    glassBg: 'rgba(20,22,30,0.72)',
+    glassBorder: 'rgba(255,255,255,0.14)',
+    texture: 'rgba(255,255,255,0.03)',
+    material: 'Ceramic with brushed alloy sheen',
+    shadowDepth: 1.25,
+    highlight: 'rgba(255,255,255,0.18)',
+    inset: 'rgba(0,0,0,0.4)',
+    sheen: 'rgba(255,255,255,0.1)',
+  },
+  quartz: {
+    id: 'quartz',
+    name: 'Rose Quartz',
+    emoji: '🌸',
+    glassBg: 'rgba(255,214,222,0.5)',
+    glassBorder: 'rgba(255,255,255,0.75)',
+    texture: 'rgba(255,255,255,0.03)',
+    material: 'Soft rose quartz glass',
+    shadowDepth: 0.9,
+    highlight: 'rgba(255,255,255,0.35)',
+    inset: 'rgba(183,110,121,0.12)',
+    sheen: 'rgba(255,255,255,0.12)',
+  },
+  velvet: {
+    id: 'velvet',
+    name: 'Midnight Velvet',
+    emoji: '🌌',
+    glassBg: 'rgba(20,16,40,0.7)',
+    glassBorder: 'rgba(160,120,255,0.18)',
+    texture: 'rgba(160,120,255,0.04)',
+    material: 'Deep matte velvet',
+    shadowDepth: 1.1,
+    highlight: 'rgba(180,150,255,0.18)',
+    inset: 'rgba(0,0,0,0.35)',
+    sheen: 'rgba(160,120,255,0.08)',
+  },
+};
+
+export const SKIN_LIST: Skin[] = Object.values(SKINS);
 
 export const isIOS = Platform.OS === 'ios';
 export const isAndroid = Platform.OS === 'android';
