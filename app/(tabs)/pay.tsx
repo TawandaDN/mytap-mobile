@@ -21,6 +21,7 @@ import { useToast } from '../../src/components/ui/Toast';
 import { useApp } from '../../src/store/AppStore';
 import { merchants } from '../../src/data/mock';
 import { formatPula } from '../../src/utils/format';
+import { playTapticPayment } from '../../src/utils/tapticSound';
 import { spacing, type, radius } from '../../src/theme';
 import { haptics } from '../../src/utils/haptics';
 import { PressableScale } from '../../src/components/ui/PressableScale';
@@ -51,6 +52,8 @@ export default function PayScreen() {
   const confirmPayment = () => {
     setStage('processing');
     haptics.processing();
+    // Acoustic taptic double-pop (Apple-Pay-style physical transaction sound)
+    playTapticPayment();
     setTimeout(() => {
       const amt = parseFloat(amount);
       dispatch({
@@ -213,15 +216,15 @@ export default function PayScreen() {
       </SlideModal>
 
       {/* Processing modal */}
-      <SlideModal visible={stage === 'processing'} onClose={() => {}}>
+      <SlideUpModal visible={stage === 'processing'} onClose={() => {}}>
         <View style={styles.processingWrap}>
           <ShimmerLoader />
           <Text style={[styles.processingText, { color: theme.text }]}>Processing payment…</Text>
         </View>
-      </SlideModal>
+      </SlideUpModal>
 
       {/* Success modal */}
-      <SlideModal visible={stage === 'success'} onClose={closeSuccess}>
+      <SlideUpModal visible={stage === 'success'} onClose={closeSuccess}>
         <View style={styles.successWrap}>
           <SuccessCheck />
           <Text style={[styles.successTitle, { color: theme.text }]}>Payment successful!</Text>
@@ -251,7 +254,7 @@ export default function PayScreen() {
           </GlassCard>
         )}
         <Button title="Done" onPress={closeSuccess} style={styles.modalBtn} />
-      </SlideModal>
+      </SlideUpModal>
     </ScreenContainer>
   );
 }
