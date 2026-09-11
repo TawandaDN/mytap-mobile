@@ -1,41 +1,54 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/theme/ThemeContext';
-import { ScreenContainer } from '../../src/components/ui/ScreenContainer';
 import { GlassCard } from '../../src/components/cards/GlassCard';
 import { HomeCard } from '../../src/components/cards/HomeCard';
+import { HubHeader } from '../../src/components/ui/HubHeader';
 import { QuickActionsGrid, QuickAction } from '../../src/components/ui/QuickActionsGrid';
+import { ContactsCarousel } from '../../src/components/ui/ContactsCarousel';
 import { StaggeredItem } from '../../src/components/animations/Staggered';
-import { Typewriter } from '../../src/components/animations/Typewriter';
 import { CountUp } from '../../src/components/animations/CountUp';
 import { Sparkline } from '../../src/components/charts/Sparkline';
 import { useApp } from '../../src/store/AppStore';
-import { greetingForHour, formatPx, shortDate, guardrailProfile } from '../../src/utils/format';
+import { userProfile } from '../../src/data/mock';
+import { greetingForHour, formatPx, formatPula, shortDate } from '../../src/utils/format';
 import { buildInsights } from '../../src/utils/insights';
-import { spacing } from '../../src/theme';
+import { spacing, type, radius, shadows } from '../../src/theme';
 import { haptics } from '../../src/utils/haptics';
 import { PressableScale } from '../../src/components/ui/PressableScale';
+import { useState } from 'react';
 
+/**
+ * Home dashboard — premium banking layout.
+ * Deep purple→blue gradient header → soft warm-white canvas.
+ * Account grid · quick-transfer contacts · quick actions · live insights ·
+ * recent transactions with an animated ledger sparkline · guardrail preview.
+ */
 export default function HomeScreen() {
   const { theme } = useTheme();
   const { state } = useApp();
   const router = useRouter();
+  const [search, setSearch] = useState('');
+
   const greeting = greetingForHour(new Date().getHours());
   const primaryCard = state.cards[0];
+  const totalBalance = state.cards.reduce((sum, c) => sum + c.balance, 0);
   const insights = buildInsights(state.transactions);
   const topInsight = insights[0];
+  const unread = state.notifications.filter((n) => !n.read).length;
+  const g = state.guardrail;
 
   const quickActions: QuickAction[] = [
-    { icon: 'send', label: 'Send', color: '#2ECC71', route: '/send' },
-    { icon: 'card', label: 'Pay', color: '#3498DB', route: '/pay' },
-    { icon: 'radio', label: 'Tap to Pay', color: '#6B3A8A', route: '/pay' },
-    { icon: 'add', label: 'Top up', color: '#F5A623', route: '/cards' },
-    { icon: 'phone-portrait', label: 'Airtime', color: '#E67E22', route: '/airtime' },
-    { icon: 'cellular', label: 'Data', color: '#2ECC71', route: '/data-bundles' },
-    { icon: 'flash', label: 'Bills', color: '#FF6B4A', route: '/utilities' },
-    { icon: 'qr-code', label: 'QR', color: '#8A4A9A', route: '/qr' },
+    { icon: 'send', label: 'Send', color: '#0E8A5F', route: '/send' },
+    { icon: 'card', label: 'Pay', color: '#1E4FA8', route: '/pay' },
+    { icon: 'radio', label: 'Tap to Pay', color: '#6D5AE6', route: '/pay' },
+    { icon: 'add', label: 'Top up', color: '#B8892B', route: '/cards' },
+    { icon: 'phone-portrait', label: 'Airtime', color: '#E5604A', route: '/airtime' },
+    { icon: 'cellular', label: 'Data', color: '#0E8A5F', route: '/data-bundles' },
+    { icon: 'flash', label: 'Bills', color: '#B8892B', route: '/utilities' },
+    { icon: 'qr-code', label: 'QR', color: '#3B2560', route: '/qr' },
   ];
 
   const go = (route: string) => {
@@ -43,7 +56,7 @@ export default function HomeScreen() {
     router.push(route as any);
   };
 
-  // Ledger sparkline data from recent transactions (cumulative balance)
+  // Ledger sparkline — real-time cumulative balance from recent activity.
   const sparkData = state.transactions
     .slice(0, 8)
     .reverse()
@@ -53,149 +66,296 @@ export default function HomeScreen() {
       return acc;
     }, []);
 
+  const hasSpark = sparkData.length >= 2;
+
   return (
-    <ScreenContainer>
-      {/* Header */}
-      <StaggeredItem index={0}>
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.greeting, { color: theme.textMuted }]}>
-              <Typewriter text={`${greeting},`} speed={30} />
+    <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        stickyHeaderIndices={undefined}
+      >
+        {/* Gradient header block */}
+        <HubHeader
+          greeting={greeting}
+          name={userProfile.name}
+          initial={userProfile.name[0]}
+          balance={totalBalance}
+          searchValue={search}
+          onSearchChange={setSearch}
+          onAvatarPress={() => go('/profile')}
+          onCartPress={() => go('/utilities')}
+          onBellPress={() => go('/notifications')}
+          unreadCount={unread}
+        />
+
+        <View style={styles.body}>
+          {/* Primary card */}
+          <StaggeredItem index={0} style={styles.cardWrap}>
+            <HomeCard card={primaryCard} sparkData={hasSpark ? sparkData : [1, 1]} onPress={() => go('/cards')} />
+          </StaggeredItem>
+
+          {/* Account grid — 2 columns */}
+          <StaggeredItem index={1}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Your accounts</Text>
+              <PressableScale onPress={() => go('/cards')}>
+                <Text style={[styles.seeAll, { color: theme.primary }]}>See all</Text>
+              </PressableScale>
+            </View>
+            <View style={styles.grid}>
+              {state.cards.map((c) => (
+                <PressableScale
+                  key={c.id}
+                  style={[styles.acctTile, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                  onPress={() => {
+                    haptics.medium();
+                    router.push('/cards' as any);
+                  }}
+                >
+                  <View style={styles.acctTop}>
+                    <View style={[styles.acctIcon, { backgroundColor: c.gradient[1] + '16' }]}>
+                      <Ionicons name="card" size={15} color={c.gradient[1]} />
+                    </View>
+                    <Text style={[styles.acctLast4, { color: theme.textMuted }]}>••{c.last4.slice(-2)}</Text>
+                  </View>
+                  <Text style={[styles.acctName, { color: theme.textMuted }]} numberOfLines={1}>
+                    {c.name}
+                  </Text>
+                  <Text style={[styles.acctBalance, { color: theme.text }]} numberOfLines={1}>
+                    {formatPula(c.balance)}
+                  </Text>
+                  {c.frozen && (
+                    <Text style={[styles.acctFrozen, { color: theme.danger }]}>Frozen</Text>
+                  )}
+                </PressableScale>
+              ))}
+              {/* Reward points tile */}
+              <PressableScale
+                style={[styles.acctTile, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                onPress={() => {
+                  haptics.medium();
+                  go('/rewards');
+                }}
+              >
+                <View style={styles.acctTop}>
+                  <View style={[styles.acctIcon, { backgroundColor: theme.gold + '16' }]}>
+                    <Ionicons name="gift" size={15} color={theme.gold} />
+                  </View>
+                  <Ionicons name="chevron-forward" size={13} color={theme.textMuted} />
+                </View>
+                <Text style={[styles.acctName, { color: theme.textMuted }]}>Reward points</Text>
+                <CountUp
+                  value={state.totalPoints}
+                  format={(v) => `${Math.round(v).toLocaleString('en-BW')} pts`}
+                  duration={400}
+                  glow="none"
+                  style={[styles.acctBalance, { color: theme.text }]}
+                />
+              </PressableScale>
+            </View>
+          </StaggeredItem>
+
+          {/* Quick-transfer contacts */}
+          <StaggeredItem index={2}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Send to</Text>
+              <PressableScale onPress={() => go('/send')}>
+                <Text style={[styles.seeAll, { color: theme.primary }]}>See all</Text>
+              </PressableScale>
+            </View>
+            <ContactsCarousel onPress={() => go('/send')} />
+          </StaggeredItem>
+
+          {/* Quick actions */}
+          <StaggeredItem index={3}>
+            <Text style={[styles.sectionTitle, styles.sectionTitleFlush, { color: theme.text }]}>
+              Quick actions
             </Text>
-            <Text style={[styles.name, { color: theme.text }]}>Tawanda</Text>
-          </View>
-          <View style={styles.headerIcons}>
-            <PressableScale style={styles.iconBtn} onPress={() => { haptics.light(); router.push('/notifications'); }}>
-              <Ionicons name="notifications-outline" size={20} color={theme.text} />
+            <QuickActionsGrid actions={quickActions} onPress={go} />
+          </StaggeredItem>
+
+          {/* Live insights snapshot */}
+          <StaggeredItem index={4}>
+            <PressableScale onPress={() => go('/insights')}>
+              <GlassCard solid bubbleColor={`${theme.indicator}14`} style={styles.insightCard}>
+                <View style={styles.insightRow}>
+                  <View
+                    style={[
+                      styles.insightIcon,
+                      { backgroundColor: (topInsight?.color || theme.indicator) + '16' },
+                    ]}
+                  >
+                    <Ionicons
+                      name={(topInsight?.icon as any) || 'sparkles'}
+                      size={19}
+                      color={topInsight?.color || theme.indicator}
+                    />
+                  </View>
+                  <View style={styles.insightInfo}>
+                    <Text style={[styles.insightEyebrow, { color: theme.textMuted }]}>
+                      INTELLIGENT INSIGHTS
+                    </Text>
+                    <Text style={[styles.insightTitle, { color: theme.text }]} numberOfLines={1}>
+                      {topInsight?.title || 'Your insights'}
+                    </Text>
+                    <Text style={[styles.insightSub, { color: theme.textMuted }]} numberOfLines={1}>
+                      {topInsight?.body || 'Tap to see your personalized insights'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={17} color={theme.textMuted} />
+                </View>
+              </GlassCard>
             </PressableScale>
-            <PressableScale style={styles.iconBtn} onPress={() => { haptics.light(); router.push('/settings'); }}>
-              <Ionicons name="settings-outline" size={20} color={theme.text} />
+          </StaggeredItem>
+
+          {/* Recent transactions */}
+          <StaggeredItem index={5}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent transactions</Text>
+              <PressableScale onPress={() => go('/transactions')}>
+                <Text style={[styles.seeAll, { color: theme.primary }]}>See all</Text>
+              </PressableScale>
+            </View>
+            <GlassCard solid bubble={false}>
+              <View style={[styles.spending, { borderBottomColor: theme.hairline }]}>
+                <View>
+                  <Text style={[styles.sparkTitle, { color: theme.textMuted }]}>Spending trend</Text>
+                  <Text style={[styles.sparkValue, { color: theme.text }]}>Last 8 transactions</Text>
+                </View>
+                {hasSpark && (
+                  <Sparkline data={sparkData} width={104} height={34} color={theme.indicator} />
+                )}
+              </View>
+              {state.transactions.slice(0, 3).map((tx, i) => (
+                <PressableScale
+                  key={tx.id}
+                  style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline }]}
+                  onPress={() => go('/transactions')}
+                >
+                  <View style={[styles.txIcon, { backgroundColor: tx.color + '16' }]}>
+                    <Text style={styles.txEmoji}>{tx.icon}</Text>
+                  </View>
+                  <View style={styles.txInfo}>
+                    <Text style={[styles.txMerchant, { color: theme.text }]} numberOfLines={1}>
+                      {tx.merchant}
+                    </Text>
+                    <Text style={[styles.txCategory, { color: theme.textMuted }]} numberOfLines={1}>
+                      {tx.category} · {shortDate(tx.date)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.txAmount, { color: theme.text }]}>{formatPx(tx.amount)}</Text>
+                </PressableScale>
+              ))}
+            </GlassCard>
+          </StaggeredItem>
+
+          {/* Guardrail preview */}
+          <StaggeredItem index={6}>
+            <PressableScale onPress={() => go('/guardrail')}>
+              <GlassCard solid bubble={false}>
+                <View style={styles.guardrailHeader}>
+                  <View>
+                    <Text style={[styles.sparkTitle, { color: theme.textMuted }]}>MyTap Guardrail</Text>
+                    <Text style={[styles.sparkValue, { color: theme.text }]}>
+                      P{g.used.toLocaleString()} of P{g.monthlyLimit.toLocaleString()}
+                    </Text>
+                  </View>
+                  <Text style={[styles.guardrailPct, { color: theme.indicator }]}>{g.pct}%</Text>
+                </View>
+                {/* Dual-tone track: soft grey background + crisp violet indicator */}
+                <View style={[styles.progressTrack, { backgroundColor: theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(16,24,40,0.07)' }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${Math.min(100, g.pct)}%`, backgroundColor: theme.indicator },
+                    ]}
+                  />
+                </View>
+              </GlassCard>
             </PressableScale>
-          </View>
+          </StaggeredItem>
         </View>
-      </StaggeredItem>
-
-      {/* Hero balance + primary card (Framer Motion) */}
-      <StaggeredItem index={1}>
-        <View style={styles.hero}>
-          <Text style={[styles.heroLabel, { color: theme.textMuted }]}>Total balance</Text>
-          <CountUp value={primaryCard.balance} format={(v) => `P${v.toLocaleString('en-BW', { minimumFractionDigits: 2 })}`} glow="emerald" style={[styles.heroBalance, { color: theme.text }]} />
-        </View>
-        <HomeCard card={primaryCard} sparkData={sparkData} onPress={() => go('/cards')} />
-      </StaggeredItem>
-
-      {/* Quick actions grid */}
-      <StaggeredItem index={2}>
-        <QuickActionsGrid actions={quickActions} onPress={go} />
-      </StaggeredItem>
-
-      {/* Live insights snapshot */}
-      <StaggeredItem index={3}>
-        <PressableScale onPress={() => go('/insights')}>
-          <GlassCard bubbleColor={`${theme.accent}22`} style={styles.insightCard}>
-            <View style={styles.insightRow}>
-              <View style={[styles.insightIcon, { backgroundColor: (topInsight?.color || theme.accent) + '22' }]}>
-                <Ionicons name={topInsight?.icon as any || 'sparkles'} size={20} color={topInsight?.color || theme.accent} />
-              </View>
-              <View style={styles.insightInfo}>
-                <Text style={[styles.insightTitle, { color: theme.text }]}>{topInsight?.title || 'Your insights'}</Text>
-                <Text style={[styles.insightSub, { color: theme.textMuted }]} numberOfLines={1}>
-                  {topInsight?.body || 'Tap to see your personalized insights'}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
-            </View>
-          </GlassCard>
-        </PressableScale>
-      </StaggeredItem>
-
-      {/* Recent transactions with animated sparkline */}
-      <StaggeredItem index={4}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent transactions</Text>
-          <PressableScale onPress={() => go('/transactions')}>
-            <Text style={[styles.seeAll, { color: theme.accent }]}>See all</Text>
-          </PressableScale>
-        </View>
-        <GlassCard bubble={false}>
-          <View style={styles.spending}>
-            <Text style={[styles.sparkTitle, { color: theme.textMuted }]}>Spending trend</Text>
-            <Sparkline data={sparkData} width={140} height={36} color={theme.accent} />
-          </View>
-          {state.transactions.slice(0, 3).map((tx, i) => (
-            <View key={tx.id} style={[styles.txRow, i > 0 && styles.txDivider]}>
-              <View style={[styles.txIcon, { backgroundColor: tx.color + '22' }]}>
-                <Text style={styles.txEmoji}>{tx.icon}</Text>
-              </View>
-              <View style={styles.txInfo}>
-                <Text style={[styles.txMerchant, { color: theme.text }]}>{tx.merchant}</Text>
-                <Text style={[styles.txCategory, { color: theme.textMuted }]}>{tx.category} · {shortDate(tx.date)}</Text>
-              </View>
-              <Text style={[styles.txAmount, { color: '#E74C3C' }]}>{formatPx(tx.amount)}</Text>
-            </View>
-          ))}
-        </GlassCard>
-      </StaggeredItem>
-
-      {/* Guardrail preview */}
-      <StaggeredItem index={5}>
-        <GlassCard bubble={false}>
-          <View style={styles.guardrailHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>MyTap Guardrail</Text>
-            <Text style={[styles.guardrailPct, { color: theme.accent }]}>{guardrailProfile.pct}%</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${guardrailProfile.pct}%`, backgroundColor: theme.accent }]} />
-          </View>
-          <Text style={[styles.guardrailText, { color: theme.textMuted }]}>
-            P{guardrailProfile.used.toLocaleString()} used of P{guardrailProfile.monthlyLimit.toLocaleString()}
-          </Text>
-        </GlassCard>
-      </StaggeredItem>
-    </ScreenContainer>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  root: {
+    flex: 1,
+  },
+  scroll: {
+    paddingBottom: 120,
+  },
+  body: {
+    paddingHorizontal: spacing.lg,
+  },
+  cardWrap: {
+    marginTop: -spacing.xl,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
   },
-  greeting: {
-    fontSize: 15,
+  sectionTitle: {
+    ...type.heading,
   },
-  name: {
-    fontSize: 28,
-    fontWeight: '700',
+  sectionTitleFlush: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
   },
-  headerIcons: {
+  seeAll: {
+    ...type.caption,
+    fontWeight: '600',
+  },
+  grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+  acctTile: {
+    width: '48.6%',
+    borderRadius: radius.card,
+    borderWidth: 1,
+    padding: spacing.md,
+    ...shadows.subtle,
+  },
+  acctTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  acctIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  hero: {
-    marginBottom: spacing.lg,
+  acctLast4: {
+    ...type.small,
+    fontVariant: ['tabular-nums'],
   },
-  heroLabel: {
-    fontSize: 13,
-    marginBottom: 2,
+  acctName: {
+    ...type.caption,
+    fontSize: 12,
   },
-  heroBalance: {
-    fontSize: 40,
-    fontWeight: '700',
+  acctBalance: {
+    ...type.money,
+    marginTop: 2,
+  },
+  acctFrozen: {
+    ...type.small,
+    fontWeight: '600',
+    marginTop: 2,
   },
   insightCard: {
     marginTop: spacing.xl,
-    marginBottom: spacing.xl,
   },
   insightRow: {
     flexDirection: 'row',
@@ -203,80 +363,78 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   insightIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   insightInfo: {
     flex: 1,
   },
+  insightEyebrow: {
+    ...type.small,
+    fontSize: 9.5,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
   insightTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...type.body,
+    fontWeight: '600',
   },
   insightSub: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  seeAll: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...type.caption,
+    fontSize: 12,
+    marginTop: 1,
   },
   spending: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
   },
   sparkTitle: {
-    fontSize: 13,
+    ...type.caption,
+    fontSize: 12,
+  },
+  sparkValue: {
+    ...type.subheading,
+    fontWeight: '600',
+    marginTop: 1,
   },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
   },
-  txDivider: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(15,23,41,0.06)',
-  },
   txIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
   txEmoji: {
-    fontSize: 18,
+    fontSize: 15,
   },
   txInfo: {
     flex: 1,
+    marginRight: spacing.sm,
   },
   txMerchant: {
-    fontSize: 15,
+    ...type.body,
     fontWeight: '600',
   },
   txCategory: {
+    ...type.caption,
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 1,
   },
   txAmount: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...type.money,
   },
   guardrailHeader: {
     flexDirection: 'row',
@@ -285,21 +443,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   guardrailPct: {
-    fontSize: 20,
+    ...type.heading,
     fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   progressTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(15,23,41,0.08)',
+    height: 6,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
-  },
-  guardrailText: {
-    fontSize: 13,
-    marginTop: spacing.sm,
+    borderRadius: 3,
   },
 });
