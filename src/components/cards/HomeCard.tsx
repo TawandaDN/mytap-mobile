@@ -1,18 +1,17 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { motion } from 'motion/react';
+import { Ionicons } from '@expo/vector-icons';
 import { WalletCard } from '../../data/mock';
 import { formatPula, maskCard } from '../../utils/format';
 import { CountUp } from '../animations/CountUp';
-import { WaterBubble } from '../animations/WaterBubble';
 import { Sparkline } from '../charts/Sparkline';
 import { radius, shadows, type } from '../../theme';
 
 /**
- * Home hero card animated with Framer Motion (motion/react).
- * Drag with spring physics, layout/shared transitions, and a live
- * ledger sparkline reflecting real-time balance activity.
+ * Home hero card — Framer Motion draggable card with a live ledger sparkline.
+ * Hover is a restrained 2px lift (300ms ease-out) — no tilt, no spin.
  */
 export function HomeCard({
   card,
@@ -28,10 +27,10 @@ export function HomeCard({
       style={styles.wrap}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.12}
-      whileTap={{ scale: 0.98 }}
+      dragElastic={0.08}
+      whileTap={{ scale: 0.985 }}
       whileHover={{ y: -2 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       onTap={onPress}
     >
       <LinearGradient
@@ -40,21 +39,32 @@ export function HomeCard({
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        <WaterBubble color="rgba(255,255,255,0.16)" />
+        {/* Material depth: top sheen + soft corner glow */}
+        <View style={styles.topSheen} />
         <View style={styles.glow} />
         <View style={styles.topRow}>
-          <Text style={styles.cardName}>{card.name}</Text>
+          <View style={styles.brandRow}>
+            <View style={styles.logoDot}>
+              <Ionicons name="flash" size={12} color="#fff" />
+            </View>
+            <Text style={styles.cardName}>{card.name}</Text>
+          </View>
           <View style={styles.chip}>
             <View style={styles.chipInner} />
           </View>
         </View>
         <View style={styles.balanceRow}>
           <Text style={styles.balanceLabel}>Available balance</Text>
-          <CountUp value={card.balance} format={(v) => formatPula(v)} glow="emerald" style={styles.balance} />
+          <CountUp
+            value={card.balance}
+            format={(v) => formatPula(v)}
+            glow="none"
+            style={styles.balance}
+          />
         </View>
-        {/* Live ledger sparkline */}
+        {/* Live ledger sparkline — real-time calculation of balance activity */}
         <View style={styles.sparkRow}>
-          <Sparkline data={sparkData} width={110} height={34} color="rgba(255,255,255,0.85)" />
+          <Sparkline data={sparkData} width={106} height={30} color="rgba(255,255,255,0.9)" />
           <Text style={styles.sparkLabel}>30d activity</Text>
         </View>
         <View style={styles.bottomRow}>
@@ -63,6 +73,7 @@ export function HomeCard({
         </View>
         {card.frozen && (
           <View style={styles.frozenBadge}>
+            <Ionicons name="snow" size={11} color="#fff" />
             <Text style={styles.frozenText}>Frozen</Text>
           </View>
         )}
@@ -73,67 +84,86 @@ export function HomeCard({
 
 const styles = StyleSheet.create({
   wrap: {
-    borderRadius: radius.xxl,
+    borderRadius: radius.card,
     ...shadows.hero,
   },
   gradient: {
-    borderRadius: radius.xxl,
+    borderRadius: radius.card,
     padding: 20,
-    height: 220,
+    height: 208,
     justifyContent: 'space-between',
     overflow: 'hidden',
   },
+  topSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '52%',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
   glow: {
     position: 'absolute',
-    top: -60,
-    right: -40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    top: -70,
+    right: -50,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardName: {
-    color: 'rgba(255,255,255,0.9)',
+    color: 'rgba(255,255,255,0.92)',
     ...type.subheading,
     fontWeight: '600',
   },
   chip: {
-    width: 40,
-    height: 30,
+    width: 38,
+    height: 28,
     borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   chipInner: {
-    width: 26,
-    height: 18,
-    borderRadius: 4,
+    width: 24,
+    height: 17,
+    borderRadius: 3,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.55)',
   },
   balanceRow: {
-    marginTop: 4,
+    marginTop: 2,
   },
   balanceLabel: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.62)',
     ...type.caption,
   },
   balance: {
     color: '#fff',
-    ...type.largeTitle,
-    fontWeight: '700',
+    ...type.moneyLarge,
   },
   sparkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 2,
   },
   sparkLabel: {
     color: 'rgba(255,255,255,0.6)',
@@ -148,25 +178,29 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     ...type.subheading,
     letterSpacing: 2,
+    fontVariant: ['tabular-nums'],
   },
   brand: {
-    color: 'rgba(255,255,255,0.9)',
-    ...type.heading,
+    color: 'rgba(255,255,255,0.92)',
+    ...type.caption,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 2.5,
   },
   frozenBadge: {
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: 'rgba(231,76,60,0.85)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(217,45,32,0.9)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
   frozenText: {
     color: '#fff',
-    fontSize: 11,
+    ...type.small,
     fontWeight: '600',
   },
 });
