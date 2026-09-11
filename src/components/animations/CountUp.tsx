@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, TextStyle } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextStyle } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -21,8 +21,8 @@ export function CountUp({
   value: number;
   format?: (v: number) => string;
   duration?: number;
-  glow?: 'emerald' | 'coral' | 'gold';
-  style?: TextStyle;
+  glow?: 'emerald' | 'coral' | 'gold' | 'none';
+  style?: StyleProp<TextStyle>;
 }) {
   const progress = useSharedValue(0);
   const [display, setDisplay] = React.useState(0);

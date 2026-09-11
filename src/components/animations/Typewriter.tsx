@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, TextStyle } from 'react-native';
+import { StyleProp, Text, TextStyle } from 'react-native';
 
 /**
  * Typewriter effect — reveals text character by character.
@@ -11,7 +11,7 @@ export function Typewriter({
 }: {
   text: string;
   speed?: number;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
 }) {
   const [count, setCount] = useState(0);
 

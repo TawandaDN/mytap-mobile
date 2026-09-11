@@ -13,19 +13,24 @@ import { useSkin } from '../../theme/SkinContext';
 import { radius, shadows, spacing, type } from '../../theme';
 import { haptics } from '../../utils/haptics';
 
-export type TabKey = 'home' | 'cards' | 'pay' | 'tariff' | 'more' | 'sticker';
+export type TabKey = 'home' | 'savings' | 'assistant' | 'pay' | 'history';
 
-const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; activeIcon: keyof typeof Ionicons.glyphMap }[] = [
+const TABS: {
+  key: TabKey;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  activeIcon: keyof typeof Ionicons.glyphMap;
+}[] = [
   { key: 'home', label: 'Home', icon: 'home-outline', activeIcon: 'home' },
-  { key: 'cards', label: 'Cards', icon: 'card-outline', activeIcon: 'card' },
-  { key: 'pay', label: 'Pay', icon: 'scan-outline', activeIcon: 'scan' },
-  { key: 'tariff', label: 'Tariff', icon: 'cellular-outline', activeIcon: 'cellular' },
-  { key: 'more', label: 'More', icon: 'ellipsis-horizontal-circle-outline', activeIcon: 'ellipsis-horizontal-circle' },
+  { key: 'savings', label: 'Savings', icon: 'trending-up-outline', activeIcon: 'trending-up' },
+  { key: 'assistant', label: 'Assistant', icon: 'sparkles-outline', activeIcon: 'sparkles' },
+  { key: 'pay', label: 'Payments', icon: 'card-outline', activeIcon: 'card' },
+  { key: 'history', label: 'History', icon: 'time-outline', activeIcon: 'time' },
 ];
 
 /**
- * Floating glassmorphism bottom tab bar with a sliding spring indicator,
- * icon morphing, and haptic on switch.
+ * Sticky white bottom tab bar — 5 distinct icons with text labels, a sliding
+ * indicator, icon morphing, and a light haptic on switch.
  */
 export function BottomTabBar({
   active,
@@ -36,7 +41,7 @@ export function BottomTabBar({
 }) {
   const { theme } = useTheme();
   const { skin } = useSkin();
-  const activeIndex = TABS.findIndex((t) => t.key === active);
+  const activeIndex = Math.max(0, TABS.findIndex((t) => t.key === active));
   const indicatorX = useSharedValue(activeIndex * (100 / TABS.length));
 
   useEffect(() => {
@@ -52,16 +57,12 @@ export function BottomTabBar({
 
   return (
     <View style={styles.wrap} pointerEvents="box-none">
-      <BlurView intensity={40} tint="light" style={styles.bar}>
-        {/* Skin sheen overlay */}
+      <BlurView intensity={60} tint="light" style={[styles.bar, { borderColor: theme.hairline }]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.surface, opacity: 0.86 }]} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: skin.sheen }]} />
         {/* Sliding active indicator */}
         <Animated.View
-          style={[
-            styles.indicator,
-            { backgroundColor: theme.accent + '22' },
-            indicatorStyle,
-          ]}
+          style={[styles.indicator, { backgroundColor: theme.indicator + '14' }, indicatorStyle]}
         />
         {TABS.map((tab) => (
           <TabItem
@@ -88,23 +89,23 @@ function TabItem({
   onPress: () => void;
   theme: any;
 }) {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(active ? 1 : 0.6);
-  const iconScale = useSharedValue(active ? 1 : 0.8);
+  const iconScale = useSharedValue(active ? 1 : 0.88);
+  const opacity = useSharedValue(active ? 1 : 0.55);
 
   useEffect(() => {
-    scale.value = withTiming(active ? 1.08 : 1, { duration: 300, easing: Easing.out(Easing.cubic) });
-    opacity.value = withTiming(active ? 1 : 0.6, { duration: 300, easing: Easing.out(Easing.cubic) });
-    iconScale.value = withTiming(active ? 1 : 0.8, { duration: 300, easing: Easing.out(Easing.cubic) });
-  }, [active, scale, opacity, iconScale]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+    iconScale.value = withTiming(active ? 1.04 : 0.88, {
+      duration: 300,
+      easing: Easing.out(Easing.cubic),
+    });
+    opacity.value = withTiming(active ? 1 : 0.55, {
+      duration: 300,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [active, iconScale, opacity]);
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{ scale: iconScale.value }],
+    opacity: opacity.value,
   }));
 
   return (
@@ -115,20 +116,16 @@ function TabItem({
         onPress();
       }}
     >
-      <Animated.View style={[styles.iconWrap, style]}>
-        <Animated.View style={iconStyle}>
-          <Ionicons
-            name={active ? tab.activeIcon : tab.icon}
-            size={22}
-            color={active ? theme.accent : theme.textMuted}
-          />
-        </Animated.View>
+      <Animated.View style={iconStyle}>
+        <Ionicons
+          name={active ? tab.activeIcon : tab.icon}
+          size={21}
+          color={active ? theme.indicator : theme.textMuted}
+        />
       </Animated.View>
       <Text
-        style={[
-          styles.label,
-          { color: active ? theme.accent : theme.textMuted },
-        ]}
+        style={[styles.label, { color: active ? theme.indicator : theme.textMuted }]}
+        numberOfLines={1}
       >
         {tab.label}
       </Text>
@@ -142,17 +139,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
   },
   bar: {
     flexDirection: 'row',
-    borderRadius: radius.xxl,
+    borderRadius: radius.xl,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: spacing.xs,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
     ...shadows.medium,
     overflow: 'hidden',
     position: 'relative',
@@ -162,21 +157,19 @@ const styles = StyleSheet.create({
     top: spacing.sm,
     bottom: spacing.sm,
     width: `${100 / TABS.length}%`,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
   },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 3,
+    paddingVertical: 4,
     zIndex: 1,
-  },
-  iconWrap: {
-    padding: 6,
-    borderRadius: 12,
   },
   label: {
     ...type.small,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
 });
