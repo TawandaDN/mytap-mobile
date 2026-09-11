@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -9,23 +9,25 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSkin } from '../../theme/SkinContext';
-import { radius, shadows } from '../../theme';
+import { shadows } from '../../theme';
 import { WaterBubble } from '../animations/WaterBubble';
 import { haptics } from '../../utils/haptics';
 
 /**
- * Glassmorphism card — translucent frosted surface with a soft border,
- * water bubble highlight, a subtle shadow, and spring press feedback.
+ * Glassmorphism surface — translucent frosted panel with a hairline border
+ * that makes white containers pop cleanly off the warm cream canvas.
+ * Strict 18px radius, layered drop shadow, skin texture + sheen for depth.
  */
 export function GlassCard({
   children,
   style,
-  blur = 20,
+  blur = 26,
   bubble = true,
   bubbleColor = 'rgba(255,255,255,0.16)',
   onLayout,
   onPress,
   pressable = false,
+  solid = false,
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
@@ -35,15 +37,12 @@ export function GlassCard({
   onLayout?: (e: any) => void;
   onPress?: () => void;
   pressable?: boolean;
+  /** Solid surface (no blur) — for dense, highly scannable lists. */
+  solid?: boolean;
 }) {
   const { theme } = useTheme();
   const { skin } = useSkin();
   const scale = useSharedValue(1);
-
-  useEffect(() => {
-    if (!pressable) return;
-    scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
-  }, [pressable, scale]);
 
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -51,24 +50,32 @@ export function GlassCard({
 
   const content = (
     <>
-      <BlurView intensity={blur} tint="light" style={StyleSheet.absoluteFill} />
-      {/* Skin texture + sheen overlay for material depth */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: skin.texture }]} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: skin.sheen }]} />
+      {solid ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.surface }]} />
+      ) : (
+        <BlurView intensity={blur} tint="light" style={StyleSheet.absoluteFill} />
+      )}
+      {/* Skin material: texture + brushed sheen + top inner highlight */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: solid ? 'transparent' : skin.texture }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: solid ? 'transparent' : skin.sheen }]} />
+      <View style={[styles.topHighlight, { backgroundColor: solid ? 'rgba(255,255,255,0.0)' : skin.highlight }]} />
       {bubble && <WaterBubble color={bubbleColor} />}
       <View style={styles.content}>{children}</View>
     </>
   );
 
+  const depth = skin.shadowDepth;
   const cardStyle = [
     styles.card,
     {
-      backgroundColor: theme.glassBg,
-      borderColor: skin.glassBorder,
+      borderRadius: theme.cardRadius,
+      backgroundColor: solid ? theme.surface : theme.glassBg,
+      borderColor: theme.hairline,
       shadowColor: theme.glassShadow,
-      shadowOpacity: 0.1 * skin.shadowDepth,
-      shadowRadius: 16 * skin.shadowDepth,
-      elevation: 4 * skin.shadowDepth,
+      shadowOpacity: 0.09 * depth,
+      shadowRadius: 15 * depth,
+      shadowOffset: { width: 0, height: 6 * depth },
+      elevation: 3 * depth,
     },
     style,
   ];
@@ -78,7 +85,7 @@ export function GlassCard({
       <Pressable
         onLayout={onLayout}
         onPressIn={() => {
-          scale.value = withTiming(0.97, { duration: 300, easing: Easing.out(Easing.cubic) });
+          scale.value = withTiming(0.985, { duration: 300, easing: Easing.out(Easing.cubic) });
           haptics.pressIn();
         }}
         onPressOut={() => {
@@ -102,10 +109,16 @@ export function GlassCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.xl,
     borderWidth: 1,
     overflow: 'hidden',
     ...shadows.soft,
+  },
+  topHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
   },
   content: {
     padding: 16,

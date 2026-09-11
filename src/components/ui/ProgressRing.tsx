@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -11,76 +11,64 @@ import Animated, {
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /**
- * Animated circular progress ring with gradient stroke.
- * Color shifts green → yellow → red based on usage.
+ * Elegant circular progress ring.
+ * Thin, refined stroke that draws smoothly from 0% to target over 1500ms
+ * (ease-out) with a soft dual-tone track. The centre content is perfectly
+ * balanced both vertically and horizontally.
  */
 export function ProgressRing({
   size = 180,
-  strokeWidth = 14,
+  strokeWidth = 10,
   progress = 0,
-  gradient = ['#2ECC71', '#F5A623', '#E74C3C'],
+  color = '#6D5AE6',
+  trackColor = 'rgba(16,24,40,0.07)',
   children,
+  gradient,
 }: {
   size?: number;
   strokeWidth?: number;
   progress?: number; // 0..1
-  gradient?: string[];
+  color?: string;
+  trackColor?: string;
   children?: React.ReactNode;
+  /** Accepts a legacy gradient array — the first colour is used as the indicator. */
+  gradient?: string[];
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const p = useSharedValue(0);
 
+  const ringColor = color || (gradient && gradient[0]) || '#6D5AE6';
+
   useEffect(() => {
-    p.value = withTiming(progress, { duration: 1500, easing: Easing.out(Easing.cubic) });
+    p.value = withTiming(Math.max(0, Math.min(1, progress)), {
+      duration: 1500,
+      easing: Easing.out(Easing.cubic),
+    });
   }, [progress, p]);
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference * (1 - p.value),
   }));
 
-  const glowProps = useAnimatedProps(() => ({
-    strokeDashoffset: circumference * (1 - p.value),
-    opacity: 0.3 + p.value * 0.4,
-  }));
-
-  const gid = `ring-${gradient.join('').replace(/[^a-zA-Z0-9]/g, '')}`;
-
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <SvgGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-            {gradient.map((c, i) => (
-              <Stop key={i} offset={i / (gradient.length - 1)} stopColor={c} />
-            ))}
-          </SvgGradient>
-        </Defs>
+        {/* Soft grey track */}
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(15,23,41,0.08)"
+          stroke={trackColor}
           strokeWidth={strokeWidth}
           fill="none"
         />
+        {/* Crisp indicator stroke */}
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={`url(#${gid})`}
-          strokeWidth={strokeWidth + 6}
-          strokeLinecap="round"
-          fill="none"
-          strokeDasharray={circumference}
-          animatedProps={glowProps}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-        <AnimatedCircle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={`url(#${gid})`}
+          stroke={ringColor}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           fill="none"
@@ -89,14 +77,17 @@ export function ProgressRing({
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
-      <View style={styles.center}>{children}</View>
+      {/* Centred content — perfectly balanced V + H */}
+      <View style={styles.center} pointerEvents="none">
+        {children}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   center: {
-    position: 'absolute',
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },

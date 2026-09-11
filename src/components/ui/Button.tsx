@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, ViewStyle } from 'react-native';
+import React from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
@@ -7,17 +7,17 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { Pressable } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
-import { useSkin } from '../../theme/SkinContext';
 import { radius, shadows, spacing, type } from '../../theme';
 import { haptics } from '../../utils/haptics';
-import { WaterBubble } from '../animations/WaterBubble';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold';
 
 /**
- * MyTap button with water bubble effect and spring press feedback.
+ * MyTap button.
+ * `primary` — rich deep forest green with modern layered depth.
+ * `gold`    — polished metallic matte gold (not mud-yellow).
+ * Full-width pill by default, anchored comfortably to the bottom.
  */
 export function Button({
   title,
@@ -27,6 +27,7 @@ export function Button({
   disabled = false,
   style,
   icon,
+  fullWidth = false,
 }: {
   title: string;
   onPress?: () => void;
@@ -35,14 +36,10 @@ export function Button({
   disabled?: boolean;
   style?: ViewStyle;
   icon?: React.ReactNode;
+  fullWidth?: boolean;
 }) {
   const { theme } = useTheme();
-  const { skin } = useSkin();
   const scale = useSharedValue(1);
-
-  useEffect(() => {
-    scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
-  }, [scale]);
 
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -54,22 +51,28 @@ export function Button({
     onPress?.();
   };
 
+  /** Rich, solid brand tones with subtle modern depth. */
   const gradientColors: Record<Variant, readonly [string, string, string]> = {
-    primary: [...theme.accentGradient],
+    // deep forest green → deeper green (primary interactive + success)
+    primary: ['#12946E', theme.primary, theme.primaryDeep],
     secondary: [...theme.accentGradient],
-    gold: ['#F5A623', '#FFB84D', '#FF6B4A'],
-    danger: ['#E74C3C', '#C0392B', '#8E44AD'],
-    ghost: ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.1)'],
+    // polished metallic matte gold
+    gold: [...theme.goldGradient],
+    danger: ['#E5604A', '#D92D20', '#9B1C16'],
+    ghost: ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)'],
   };
 
-  const textColor = variant === 'ghost' ? theme.text : '#FFFFFF';
+  const textColor =
+    variant === 'ghost' ? theme.text : variant === 'gold' ? '#3A2A06' : '#FFFFFF';
 
   return (
-    <Animated.View style={[styles.wrap, disabled && styles.disabled, style, pressStyle]}>
+    <Animated.View
+      style={[styles.wrap, fullWidth && styles.fullWidth, disabled && styles.disabled, style, pressStyle]}
+    >
       <Pressable
         onPressIn={() => {
           if (disabled || loading) return;
-          scale.value = withTiming(0.94, { duration: 300, easing: Easing.out(Easing.cubic) });
+          scale.value = withTiming(0.975, { duration: 300, easing: Easing.out(Easing.cubic) });
           haptics.pressIn();
         }}
         onPressOut={() => {
@@ -82,12 +85,14 @@ export function Button({
         <LinearGradient
           colors={gradientColors[variant]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0.6, y: 1 }}
           style={styles.gradient}
         >
-          <WaterBubble color="rgba(255,255,255,0.14)" size={120} />
+          {/* Modern depth: soft top highlight + bottom inner shade */}
+          <View style={styles.topSheen} pointerEvents="none" />
+          <View style={styles.bottomShade} pointerEvents="none" />
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={textColor} />
           ) : (
             <>
               {icon}
@@ -104,7 +109,11 @@ const styles = StyleSheet.create({
   wrap: {
     borderRadius: radius.pill,
     overflow: 'hidden',
-    ...shadows.medium,
+    alignSelf: 'flex-start',
+    ...shadows.soft,
+  },
+  fullWidth: {
+    alignSelf: 'stretch',
   },
   disabled: {
     opacity: 0.5,
@@ -118,6 +127,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     overflow: 'hidden',
+  },
+  topSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  bottomShade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.12)',
   },
   label: {
     ...type.subheading,

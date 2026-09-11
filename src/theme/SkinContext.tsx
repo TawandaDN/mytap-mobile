@@ -9,15 +9,15 @@ interface SkinContextValue {
 }
 
 const SkinContext = createContext<SkinContextValue>({
-  skin: SKINS.frosted,
-  skinId: 'frosted',
+  skin: SKINS.ceramic,
+  skinId: 'ceramic',
   setSkinId: () => {},
 });
 
 const SKIN_KEY = 'mytap.skin.id';
 
 export function SkinProvider({ children }: { children: React.ReactNode }) {
-  const [skinId, setSkinIdState] = useState<SkinId>('frosted');
+  const [skinId, setSkinIdState] = useState<SkinId>('ceramic');
 
   useEffect(() => {
     AsyncStorage.getItem(SKIN_KEY)
