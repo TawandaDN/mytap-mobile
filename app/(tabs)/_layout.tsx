@@ -3,29 +3,38 @@ import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { BottomTabBar, TabKey } from '../../src/components/ui/BottomTabBar';
 import HomeScreen from './index';
-import CardsScreen from './cards';
-import PayScreen from './pay';
-import TariffScreen from './tariff';
-import StickerScreen from './sticker';
-import MoreScreen from './more';
+import SavingsScreen from './savings';
+import AssistantScreen from './assistant';
+import PayScreen from '../pay';
+import HistoryScreen from '../transactions';
 
+/**
+ * Tab layout — renders the active screen behind a sticky white bottom tab bar.
+ * Five destinations: Home · Savings · Assistant · Payments · History.
+ */
 export default function TabsLayout() {
   const { theme } = useTheme();
   const [active, setActive] = useState<TabKey>('home');
-  const handleChange = (key: TabKey) => setActive(key);
+
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <View style={styles.screen}>
         {active === 'home' && <HomeScreen />}
-        {active === 'cards' && <CardsScreen />}
+        {active === 'savings' && <SavingsScreen />}
+        {active === 'assistant' && <AssistantScreen />}
         {active === 'pay' && <PayScreen />}
-        {active === 'tariff' && <TariffScreen />}
-        {active === 'more' && <MoreScreen />}
-        {active === 'sticker' && <StickerScreen />}
+        {active === 'history' && <HistoryScreen />}
       </View>
-      <BottomTabBar active={active} onChange={handleChange} />
+      <BottomTabBar active={active} onChange={setActive} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({ root: { flex: 1 }, screen: { flex: 1 } });
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  screen: {
+    flex: 1,
+  },
+});

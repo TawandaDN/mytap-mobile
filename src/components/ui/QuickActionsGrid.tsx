@@ -2,9 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
-import { useSkin } from '../../theme/SkinContext';
 import { PressableScale } from './PressableScale';
-import { spacing, type } from '../../theme';
+import { spacing, type, shadows } from '../../theme';
 import { haptics } from '../../utils/haptics';
 
 export interface QuickAction {
@@ -15,8 +14,9 @@ export interface QuickAction {
 }
 
 /**
- * Quick actions grid — a 4-column glass grid of primary actions surfaced
- * on the Home screen. Each tile has press-scale + haptic.
+ * Quick actions grid — a clean, dense 4-column grid of primary actions.
+ * Crisp white tiles with a hairline border, coloured icon chips, and
+ * press-scale + haptic on every tap.
  */
 export function QuickActionsGrid({
   actions,
@@ -26,23 +26,24 @@ export function QuickActionsGrid({
   onPress: (route: string) => void;
 }) {
   const { theme } = useTheme();
-  const { skin } = useSkin();
 
   return (
     <View style={styles.grid}>
       {actions.map((a) => (
         <PressableScale
           key={a.label}
-          style={[styles.tile, { backgroundColor: theme.glassBg, borderColor: skin.glassBorder }]}
+          style={[styles.tile, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
           onPress={() => {
             haptics.medium();
             onPress(a.route);
           }}
         >
-          <View style={[styles.iconWrap, { backgroundColor: a.color + '22' }]}>
-            <Ionicons name={a.icon} size={22} color={a.color} />
+          <View style={[styles.iconWrap, { backgroundColor: a.color + '14' }]}>
+            <Ionicons name={a.icon} size={21} color={a.color} />
           </View>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>{a.label}</Text>
+          <Text style={[styles.label, { color: theme.textSecondary }]} numberOfLines={1}>
+            {a.label}
+          </Text>
         </PressableScale>
       ))}
     </View>
@@ -53,25 +54,27 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   tile: {
-    width: '22%',
-    borderRadius: 18,
+    width: '23%',
+    borderRadius: 16,
     borderWidth: 1,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
+    ...shadows.subtle,
   },
   iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    ...type.caption,
+    ...type.small,
+    fontSize: 10.5,
     fontWeight: '600',
     textAlign: 'center',
   },
