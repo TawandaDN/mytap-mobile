@@ -7,4 +7,18 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*', 'node_modules/*', '.expo/*'],
   },
+  {
+    // Node-run build helpers (scripts/*.js) — expose Node globals.
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+  },
 ]);

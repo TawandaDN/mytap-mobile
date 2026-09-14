@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSkin } from '../../theme/SkinContext';
 import { shadows } from '../../theme';
-import { WaterBubble, WaterBubbleLayer } from '../animations/WaterBubble';
+import { WaterBubble } from '../animations/WaterBubble';
 
 /**
  * Glassmorphism surface.
