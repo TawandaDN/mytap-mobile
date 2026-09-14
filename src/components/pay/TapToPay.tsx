@@ -116,7 +116,9 @@ export function TapToPay({
 
   const cancelHold = () => {
     if (stage === 'holding') {
+      // eslint-disable-next-line react-hooks/immutability
       holdProgress.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+      // eslint-disable-next-line react-hooks/immutability
       ripple.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
       setStage('idle');
       haptics.light();

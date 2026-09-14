@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEMES, Theme, ThemeId, ThemeMode } from './index';
 
@@ -41,6 +42,11 @@ function resolveMode(adaptive: boolean, override: ThemeMode | null, system: 'lig
   return override ?? (system === 'dark' ? 'dark' : 'light');
 }
 
+/** Light haptic on theme change. */
+function hapticTick() {
+  Haptics.selectionAsync().catch(() => {});
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const system = useColorScheme();
   const [themeId, setThemeIdState] = useState<ThemeId>('midnight');
@@ -78,28 +84,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [adaptive, override, system, tick]);
 
-  const setThemeId = (id: ThemeId) => {
+  const setThemeId = useCallback((id: ThemeId) => {
     setThemeIdState(id);
     AsyncStorage.setItem(THEME_KEY, id).catch(() => {});
     hapticTick();
-  };
+  }, []);
 
-  const setMode = (m: ThemeMode) => {
+  const setMode = useCallback((m: ThemeMode) => {
     setOverride(m);
     setAdaptiveState(false);
     AsyncStorage.setItem(MODE_KEY, m).catch(() => {});
     AsyncStorage.setItem(ADAPTIVE_KEY, 'false').catch(() => {});
     hapticTick();
-  };
+  }, []);
 
-  const toggleMode = () => setMode(mode === 'light' ? 'dark' : 'light');
+  const toggleMode = useCallback(
+    () => setMode(mode === 'light' ? 'dark' : 'light'),
+    [mode, setMode]
+  );
 
-  const setAdaptive = (a: boolean) => {
+  const setAdaptive = useCallback((a: boolean) => {
     setAdaptiveState(a);
     AsyncStorage.setItem(ADAPTIVE_KEY, String(a)).catch(() => {});
     if (a) setTick((t) => t + 1);
     hapticTick();
-  };
+  }, []);
 
   const theme = useMemo(() => {
     const def = THEMES[themeId];
@@ -112,16 +121,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-function hapticTick() {
-  // Light haptic on theme change (imported lazily to avoid circular dep)
-  try {
-    const Haptics = require('expo-haptics');
-    Haptics.selectionAsync().catch(() => {});
-  } catch {
-    /* noop */
-  }
 }
 
 export function useTheme() {

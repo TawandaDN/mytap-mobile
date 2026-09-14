@@ -23,7 +23,7 @@ import { WaterBubble } from '../animations/WaterBubble';
  */
 export function BiometricLock({ onUnlock }: { onUnlock: () => void }) {
   const { theme } = useTheme();
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const [supported, setSupported] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
   const [pin, setPin] = useState('');
@@ -56,12 +56,33 @@ export function BiometricLock({ onUnlock }: { onUnlock: () => void }) {
   }));
 
   /** Smooth scale-out unlock — ease-out only, never a spring. */
-  const doUnlock = () => {
+  const doUnlock = useCallback(() => {
     haptics.soft();
+    // eslint-disable-next-line react-hooks/immutability
     unlockScale.value = withTiming(1.04, { duration: 800, easing: Easing.out(Easing.cubic) });
+    // eslint-disable-next-line react-hooks/immutability
     unlockOpacity.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
     setTimeout(onUnlock, 620);
-  };
+  }, [onUnlock, unlockScale, unlockOpacity]);
+
+  const authenticate = useCallback(async () => {
+    haptics.medium();
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Unlock MyTap',
+        cancelLabel: 'Use PIN',
+        fallbackLabel: 'Use PIN',
+        disableDeviceFallback: true,
+      });
+      if (result.success) {
+        doUnlock();
+      } else {
+        setUsePin(true);
+      }
+    } catch {
+      setUsePin(true);
+    }
+  }, [doUnlock]);
 
   useEffect(() => {
     (async () => {
@@ -89,25 +110,6 @@ export function BiometricLock({ onUnlock }: { onUnlock: () => void }) {
     transform: [{ scale: 1 + pulse.value * 0.08 }],
     opacity: 0.5 + pulse.value * 0.3,
   }));
-
-  const authenticate = useCallback(async () => {
-    haptics.medium();
-    try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock MyTap',
-        cancelLabel: 'Use PIN',
-        fallbackLabel: 'Use PIN',
-        disableDeviceFallback: true,
-      });
-      if (result.success) {
-        doUnlock();
-      } else {
-        setUsePin(true);
-      }
-    } catch {
-      setUsePin(true);
-    }
-  }, [onUnlock]);
 
   const submitPin = () => {
     if (pin === state.pin) {
@@ -149,8 +151,6 @@ export function BiometricLock({ onUnlock }: { onUnlock: () => void }) {
     const sub = AppState.addEventListener('change', handleAppState);
     return () => sub.remove();
   }, [handleAppState]);
-
-  const showBiometric = supported && enrolled && state.biometricEnabled && !usePin;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>

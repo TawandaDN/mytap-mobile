@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/ThemeContext';
 import { Receipt } from '../../data/mock';
 import { formatPula } from '../../utils/format';
-import { radius, spacing, type } from '../../theme';
+import { radius, spacing } from '../../theme';
 import { haptics } from '../../utils/haptics';
 import { PressableScale } from '../ui/PressableScale';
 import { useToast } from '../ui/Toast';
@@ -50,7 +50,7 @@ export function ReceiptView({ receipt }: { receipt: Receipt }) {
       } else {
         show('Sharing not available', 'info');
       }
-    } catch (e) {
+    } catch {
       show('Could not generate receipt', 'error');
     }
   };
