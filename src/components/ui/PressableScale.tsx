@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Pressable, PressableProps, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -46,10 +46,6 @@ export function PressableScale({
   const scale = useSharedValue(1);
   const droplet = useWaterBubble();
 
-  useEffect(() => {
-    scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
-  }, [scale]);
-
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
@@ -60,6 +56,7 @@ export function PressableScale({
         {...rest}
         disabled={disabled}
         onPressIn={(e) => {
+          // eslint-disable-next-line react-hooks/immutability
           scale.value = withTiming(scaleTo, { duration: 300, easing: Easing.out(Easing.cubic) });
           if (haptic === 'pressIn') haptics.pressIn();
           else if (haptic === 'light') haptics.light();
@@ -68,6 +65,7 @@ export function PressableScale({
           onPressIn?.();
         }}
         onPressOut={() => {
+          // eslint-disable-next-line react-hooks/immutability
           scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
           haptics.pressOut();
           if (bubble) droplet.onPressOut();

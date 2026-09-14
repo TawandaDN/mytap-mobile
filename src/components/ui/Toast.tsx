@@ -34,7 +34,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       setMsg(m);
       setType(t);
       setVisible(true);
-      progress.value = 0;
+      // eslint-disable-next-line react-hooks/immutability
       progress.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {

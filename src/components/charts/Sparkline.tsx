@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
 import Animated, {
   Easing,
@@ -95,5 +95,3 @@ export function Sparkline({
     </View>
   );
 }
-
-const styles = StyleSheet.create({});

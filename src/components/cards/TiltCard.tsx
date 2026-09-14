@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React from 'react';
+import { StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -24,7 +24,6 @@ export function TiltCard({
 }) {
   const lift = useSharedValue(0);
   const shadow = useSharedValue(0);
-  const width = useRef(1);
 
   const pan = Gesture.Pan()
     .onBegin(() => {
@@ -52,12 +51,7 @@ export function TiltCard({
 
   return (
     <GestureDetector gesture={composed}>
-      <Animated.View
-        style={[styles.wrap, cardStyle, style]}
-        onLayout={(e) => {
-          width.current = e.nativeEvent.layout.width;
-        }}
-      >
+      <Animated.View style={[styles.wrap, cardStyle, style]}>
         {children}
       </Animated.View>
     </GestureDetector>

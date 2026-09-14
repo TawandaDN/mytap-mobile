@@ -72,10 +72,12 @@ export function Button({
       <Pressable
         onPressIn={() => {
           if (disabled || loading) return;
+          // eslint-disable-next-line react-hooks/immutability
           scale.value = withTiming(0.975, { duration: 300, easing: Easing.out(Easing.cubic) });
           haptics.pressIn();
         }}
         onPressOut={() => {
+          // eslint-disable-next-line react-hooks/immutability
           scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
           haptics.pressOut();
         }}
