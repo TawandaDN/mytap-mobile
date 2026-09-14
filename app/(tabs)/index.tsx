@@ -337,7 +337,7 @@ export default function HomeScreen() {
           />
         </StaggeredItem>
         <StaggeredItem index={12}>
-          <GlassCard solid style={styles.listCard} pressable={false}>
+          <GlassCard solid style={styles.listCard}>
             {recent.map((t, i) => (
               <View key={t.id}>
                 <PressableScale
