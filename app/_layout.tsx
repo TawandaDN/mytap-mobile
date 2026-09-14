@@ -1,7 +1,8 @@
-import 'react-native-gesture-handler';
+// Side-effect first: the native gesture handler must be installed before
+// anything else is imported.
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
