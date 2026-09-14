@@ -1,12 +1,12 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
 import { StaggeredItem } from '../src/components/animations/Staggered';
-import { spacing, type, radius } from '../src/theme';
+import { spacing } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
@@ -44,7 +44,7 @@ export default function AboutScreen() {
     </ScreenContainer>
   );
 }
-function InfoRow({ label, value, theme, last }: { label: string; value: string; theme: any; last?: boolean }) {
+function InfoRow({ label, value, theme, last }: { label: string; value: string; theme: Theme; last?: boolean }) {
   return (
     <View style={[styles.infoRow, !last && styles.infoDivider]}><Text style={[styles.infoLabel, { color: theme.textMuted }]}>{label}</Text><Text style={[styles.infoValue, { color: theme.text }]}>{value}</Text></View>
   );
