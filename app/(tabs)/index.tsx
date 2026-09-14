@@ -1,459 +1,741 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../src/theme/ThemeContext';
+import { useApp } from '../../src/store/AppStore';
 import { GlassCard } from '../../src/components/cards/GlassCard';
 import { HomeCard } from '../../src/components/cards/HomeCard';
 import { HubHeader } from '../../src/components/ui/HubHeader';
 import { QuickActionsGrid, QuickAction } from '../../src/components/ui/QuickActionsGrid';
-import { ContactsCarousel } from '../../src/components/ui/ContactsCarousel';
-import { StaggeredItem } from '../../src/components/animations/Staggered';
-import { CountUp } from '../../src/components/animations/CountUp';
-import { Sparkline } from '../../src/components/charts/Sparkline';
-import { useApp } from '../../src/store/AppStore';
-import { userProfile } from '../../src/data/mock';
-import { greetingForHour, formatPx, formatPula, shortDate } from '../../src/utils/format';
-import { buildInsights } from '../../src/utils/insights';
-import { spacing, type, radius, shadows } from '../../src/theme';
-import { haptics } from '../../src/utils/haptics';
 import { PressableScale } from '../../src/components/ui/PressableScale';
-import { useState } from 'react';
+import { ProgressRing } from '../../src/components/ui/ProgressRing';
+import { ScreenContainer } from '../../src/components/ui/ScreenContainer';
+import { StaggeredItem } from '../../src/components/animations/Staggered';
+import { Button } from '../../src/components/ui/Button';
+import { ScreenHeader } from '../../src/components/ui/ScreenHeader';
+import { formatPula, formatPx } from '../../src/utils/format';
+import { haptics } from '../../src/utils/haptics';
+import { radius, shadows, spacing, type } from '../../src/theme';
 
-/**
- * Home dashboard — premium banking layout.
- * Deep purple→blue gradient header → soft warm-white canvas.
- * Account grid · quick-transfer contacts · quick actions · live insights ·
- * recent transactions with an animated ledger sparkline · guardrail preview.
- */
+/** Quick actions — the eight primary verbs of the app. */
+const QUICK_ACTIONS: QuickAction[] = [
+  { icon: 'paper-plane-outline', label: 'Send', color: '#1E3A5F', route: '/send' },
+  { icon: 'wallet-outline', label: 'Pay', color: '#0B6B4F', route: '/pay' },
+  { icon: 'radio-outline', label: 'Tap to Pay', color: '#FF6B4A', route: '/pay' },
+  { icon: 'add-circle-outline', label: 'Top up', color: '#2ECC71', route: '/send' },
+  { icon: 'call-outline', label: 'Airtime', color: '#F5A623', route: '/airtime' },
+  { icon: 'wifi-outline', label: 'Data', color: '#6B3A8A', route: '/data-bundles' },
+  { icon: 'receipt-outline', label: 'Bills', color: '#1E3A5F', route: '/utilities' },
+  { icon: 'qr-code-outline', label: 'QR', color: '#FF6B4A', route: '/qr' },
+];
+
+function dayLabel(d: Date) {
+  const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { state } = useApp();
-  const router = useRouter();
+  const { state, dispatch } = useApp();
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [nfcDismissed, setNfcDismissed] = useState(false);
 
-  const greeting = greetingForHour(new Date().getHours());
-  const primaryCard = state.cards[0];
-  const totalBalance = state.cards.reduce((sum, c) => sum + c.balance, 0);
-  const insights = buildInsights(state.transactions);
-  const topInsight = insights[0];
+  const totalBalance = useMemo(
+    () => state.cards.reduce((sum, c) => sum + c.balance, 0),
+    [state.cards]
+  );
+
   const unread = state.notifications.filter((n) => !n.read).length;
-  const g = state.guardrail;
+  const primary = state.cards[0];
+  const tariff = state.tariff;
 
-  const quickActions: QuickAction[] = [
-    { icon: 'send', label: 'Send', color: '#0E8A5F', route: '/send' },
-    { icon: 'card', label: 'Pay', color: '#1E4FA8', route: '/pay' },
-    { icon: 'radio', label: 'Tap to Pay', color: '#6D5AE6', route: '/pay' },
-    { icon: 'add', label: 'Top up', color: '#B8892B', route: '/cards' },
-    { icon: 'phone-portrait', label: 'Airtime', color: '#E5604A', route: '/airtime' },
-    { icon: 'cellular', label: 'Data', color: '#0E8A5F', route: '/data-bundles' },
-    { icon: 'flash', label: 'Bills', color: '#B8892B', route: '/utilities' },
-    { icon: 'qr-code', label: 'QR', color: '#3B2560', route: '/qr' },
-  ];
+  /** Live ledger curve — the real activity series for the primary card. */
+  const spark = useMemo(() => {
+    const series = state.transactions.slice(0, 8).map((t) => Math.abs(t.amount)).reverse();
+    return series.length >= 2 ? series : [1, 1];
+  }, [state.transactions]);
 
-  const go = (route: string) => {
-    haptics.medium();
-    router.push(route as any);
+  const recent = state.transactions.slice(0, 3);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    haptics.refresh();
+    setTimeout(() => setRefreshing(false), 900);
   };
 
-  // Ledger sparkline — real-time cumulative balance from recent activity.
-  const sparkData = state.transactions
-    .slice(0, 8)
-    .reverse()
-    .reduce<number[]>((acc, tx) => {
-      const last = acc.length ? acc[acc.length - 1] : primaryCard.balance;
-      acc.push(Math.max(0, last + tx.amount));
-      return acc;
-    }, []);
-
-  const hasSpark = sparkData.length >= 2;
-
   return (
-    <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-        stickyHeaderIndices={undefined}
-      >
-        {/* Gradient header block */}
+    <ScreenContainer onRefresh={onRefresh} refreshing={refreshing} contentContainerStyle={styles.root}>
+      {/* Deep navy gradient header (top ~30%) with the primary metric */}
+      <View style={styles.headerWrap}>
         <HubHeader
-          greeting={greeting}
-          name={userProfile.name}
-          initial={userProfile.name[0]}
+          greetingName="Tawanda"
+          initial="TD"
           balance={totalBalance}
           searchValue={search}
           onSearchChange={setSearch}
-          onAvatarPress={() => go('/profile')}
-          onCartPress={() => go('/utilities')}
-          onBellPress={() => go('/notifications')}
+          hideBalance={state.hideBalances}
           unreadCount={unread}
+          onAvatarPress={() => router.push('/profile' as never)}
+          onCartPress={() => router.push('/more' as never)}
+          onBellPress={() => router.push('/notifications' as never)}
         />
+      </View>
 
-        <View style={styles.body}>
-          {/* Primary card */}
-          <StaggeredItem index={0} style={styles.cardWrap}>
-            <HomeCard card={primaryCard} sparkData={hasSpark ? sparkData : [1, 1]} onPress={() => go('/cards')} />
-          </StaggeredItem>
-
-          {/* Account grid — 2 columns */}
-          <StaggeredItem index={1}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Your accounts</Text>
-              <PressableScale onPress={() => go('/cards')}>
-                <Text style={[styles.seeAll, { color: theme.primary }]}>See all</Text>
-              </PressableScale>
-            </View>
-            <View style={styles.grid}>
-              {state.cards.map((c) => (
-                <PressableScale
-                  key={c.id}
-                  style={[styles.acctTile, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
-                  onPress={() => {
-                    haptics.medium();
-                    router.push('/cards' as any);
-                  }}
-                >
-                  <View style={styles.acctTop}>
-                    <View style={[styles.acctIcon, { backgroundColor: c.gradient[1] + '16' }]}>
-                      <Ionicons name="card" size={15} color={c.gradient[1]} />
-                    </View>
-                    <Text style={[styles.acctLast4, { color: theme.textMuted }]}>••{c.last4.slice(-2)}</Text>
-                  </View>
-                  <Text style={[styles.acctName, { color: theme.textMuted }]} numberOfLines={1}>
-                    {c.name}
-                  </Text>
-                  <Text style={[styles.acctBalance, { color: theme.text }]} numberOfLines={1}>
-                    {formatPula(c.balance)}
-                  </Text>
-                  {c.frozen && (
-                    <Text style={[styles.acctFrozen, { color: theme.danger }]}>Frozen</Text>
-                  )}
-                </PressableScale>
-              ))}
-              {/* Reward points tile */}
-              <PressableScale
-                style={[styles.acctTile, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
-                onPress={() => {
-                  haptics.medium();
-                  go('/rewards');
-                }}
-              >
-                <View style={styles.acctTop}>
-                  <View style={[styles.acctIcon, { backgroundColor: theme.gold + '16' }]}>
-                    <Ionicons name="gift" size={15} color={theme.gold} />
-                  </View>
-                  <Ionicons name="chevron-forward" size={13} color={theme.textMuted} />
-                </View>
-                <Text style={[styles.acctName, { color: theme.textMuted }]}>Reward points</Text>
-                <CountUp
-                  value={state.totalPoints}
-                  format={(v) => `${Math.round(v).toLocaleString('en-BW')} pts`}
-                  duration={400}
-                  glow="none"
-                  style={[styles.acctBalance, { color: theme.text }]}
-                />
-              </PressableScale>
-            </View>
-          </StaggeredItem>
-
-          {/* Quick-transfer contacts */}
-          <StaggeredItem index={2}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Send to</Text>
-              <PressableScale onPress={() => go('/send')}>
-                <Text style={[styles.seeAll, { color: theme.primary }]}>See all</Text>
-              </PressableScale>
-            </View>
-            <ContactsCarousel onPress={() => go('/send')} />
-          </StaggeredItem>
-
-          {/* Quick actions */}
-          <StaggeredItem index={3}>
-            <Text style={[styles.sectionTitle, styles.sectionTitleFlush, { color: theme.text }]}>
-              Quick actions
-            </Text>
-            <QuickActionsGrid actions={quickActions} onPress={go} />
-          </StaggeredItem>
-
-          {/* Live insights snapshot */}
-          <StaggeredItem index={4}>
-            <PressableScale onPress={() => go('/insights')}>
-              <GlassCard solid bubbleColor={`${theme.indicator}14`} style={styles.insightCard}>
-                <View style={styles.insightRow}>
-                  <View
-                    style={[
-                      styles.insightIcon,
-                      { backgroundColor: (topInsight?.color || theme.indicator) + '16' },
-                    ]}
-                  >
-                    <Ionicons
-                      name={(topInsight?.icon as any) || 'sparkles'}
-                      size={19}
-                      color={topInsight?.color || theme.indicator}
-                    />
-                  </View>
-                  <View style={styles.insightInfo}>
-                    <Text style={[styles.insightEyebrow, { color: theme.textMuted }]}>
-                      INTELLIGENT INSIGHTS
-                    </Text>
-                    <Text style={[styles.insightTitle, { color: theme.text }]} numberOfLines={1}>
-                      {topInsight?.title || 'Your insights'}
-                    </Text>
-                    <Text style={[styles.insightSub, { color: theme.textMuted }]} numberOfLines={1}>
-                      {topInsight?.body || 'Tap to see your personalized insights'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={17} color={theme.textMuted} />
-                </View>
-              </GlassCard>
-            </PressableScale>
-          </StaggeredItem>
-
-          {/* Recent transactions */}
-          <StaggeredItem index={5}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent transactions</Text>
-              <PressableScale onPress={() => go('/transactions')}>
-                <Text style={[styles.seeAll, { color: theme.primary }]}>See all</Text>
-              </PressableScale>
-            </View>
-            <GlassCard solid bubble={false}>
-              <View style={[styles.spending, { borderBottomColor: theme.hairline }]}>
-                <View>
-                  <Text style={[styles.sparkTitle, { color: theme.textMuted }]}>Spending trend</Text>
-                  <Text style={[styles.sparkValue, { color: theme.text }]}>Last 8 transactions</Text>
-                </View>
-                {hasSpark && (
-                  <Sparkline data={sparkData} width={104} height={34} color={theme.indicator} />
-                )}
+      <View style={styles.body}>
+        {/* MONDAY, SEP 14 [Today] */}
+        <StaggeredItem index={0}>
+          <GlassCard style={styles.todayCard} bubbleStrength={0.6}>
+            <View style={styles.todayTop}>
+              <Text style={[styles.todayDate, { color: theme.textMuted }]}>
+                {dayLabel(new Date())}
+              </Text>
+              <View style={[styles.todayPill, { backgroundColor: theme.primary + '18' }]}>
+                <Text style={[styles.todayPillText, { color: theme.primary }]}>Today</Text>
               </View>
-              {state.transactions.slice(0, 3).map((tx, i) => (
-                <PressableScale
-                  key={tx.id}
-                  style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline }]}
-                  onPress={() => go('/transactions')}
+            </View>
+            <Text style={[styles.todayTitle, { color: theme.text }]}>
+              Good morning, Tawanda.
+            </Text>
+            <Text style={[styles.todaySub, { color: theme.textMuted }]}>
+              Here&apos;s what needs your attention.
+            </Text>
+          </GlassCard>
+        </StaggeredItem>
+
+        {/* Quick actions — the eight primary verbs */}
+        <StaggeredItem index={1}>
+          <QuickActionsGrid
+            actions={QUICK_ACTIONS}
+            onPress={(route) => router.push(route as never)}
+          />
+        </StaggeredItem>
+
+        {/* YOUR CARDS & WALLETS — Manage > */}
+        <StaggeredItem index={2}>
+          <ScreenHeader
+            title="Your cards & wallets"
+            subtitle="Everything you can tap."
+            actionLabel="Manage"
+            onAction={() => router.push('/cards' as never)}
+          />
+        </StaggeredItem>
+        <StaggeredItem index={3}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carousel}
+            snapToInterval={296}
+            decelerationRate="fast"
+          >
+            {state.cards.map((card) => (
+              <View key={card.id} style={styles.carouselItem}>
+                <HomeCard
+                  card={card}
+                  sparkData={spark}
+                  hideBalance={state.hideBalances}
+                  onPress={() => router.push('/cards' as never)}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </StaggeredItem>
+
+        {/* TELECOM ASSET CORE */}
+        <StaggeredItem index={4}>
+          <ScreenHeader
+            title="Telecom asset core"
+            subtitle="Your data works as currency."
+          />
+        </StaggeredItem>
+        <StaggeredItem index={5}>
+          <LinearGradient
+            colors={[theme.gradient[0], theme.gradient[1], theme.gradient[2]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.telecomCard}
+          >
+            <View style={styles.telecomGlow} pointerEvents="none" />
+            <View style={styles.telecomTop}>
+              <Text style={styles.telecomKicker}>{tariff.provider.toUpperCase()} · DATA VAULT</Text>
+              <View style={styles.telecomRing}>
+                <ProgressRing
+                  size={104}
+                  strokeWidth={7}
+                  progress={tariff.usedPct / 100}
+                  color="#2ECC71"
+                  trackColor="rgba(255,255,255,0.18)"
                 >
-                  <View style={[styles.txIcon, { backgroundColor: tx.color + '16' }]}>
-                    <Text style={styles.txEmoji}>{tx.icon}</Text>
-                  </View>
-                  <View style={styles.txInfo}>
-                    <Text style={[styles.txMerchant, { color: theme.text }]} numberOfLines={1}>
-                      {tx.merchant}
-                    </Text>
-                    <Text style={[styles.txCategory, { color: theme.textMuted }]} numberOfLines={1}>
-                      {tx.category} · {shortDate(tx.date)}
-                    </Text>
-                  </View>
-                  <Text style={[styles.txAmount, { color: theme.text }]}>{formatPx(tx.amount)}</Text>
-                </PressableScale>
-              ))}
+                  <Text style={styles.ringValue}>{tariff.leftGB} GB</Text>
+                  <Text style={styles.ringLabel}>LEFT</Text>
+                </ProgressRing>
+              </View>
+            </View>
+
+            <View style={styles.telecomMeta}>
+              <View style={styles.telecomMetaItem}>
+                <Text style={styles.metaLabel}>Usage velocity</Text>
+                <Text style={styles.metaValue}>7d</Text>
+              </View>
+              <View style={styles.telecomMetaItem}>
+                <Text style={styles.metaLabel}>Wallet bridge</Text>
+                <Text style={styles.metaValue}>{formatPula(primary.balance)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.telecomBtns}>
+              <Button
+                title="Trade / Sell GB"
+                variant="ghost"
+                onPress={() => router.push('/data-bundles' as never)}
+                style={styles.telecomBtn}
+              />
+              <Button
+                title="Daily Boost"
+                variant="primary"
+                onPress={() => router.push('/data-bundles' as never)}
+                style={styles.telecomBtn}
+              />
+            </View>
+
+            <View style={styles.cashbackRow}>
+              <Ionicons name="sparkles" size={14} color="#F5A623" />
+              <Text style={styles.cashbackText}>
+                Ecosystem cashback: <Text style={styles.cashbackAccent}>+15% multiplier</Text>
+              </Text>
+            </View>
+          </LinearGradient>
+        </StaggeredItem>
+
+        {/* YOUR MYTAP DAY [READY] */}
+        <StaggeredItem index={6}>
+          <GlassCard style={styles.dayCard} bubbleStrength={0.6}>
+            <View style={styles.dayTop}>
+              <Text style={[styles.todayDate, { color: theme.textMuted }]}>YOUR MYTAP DAY</Text>
+              <View style={[styles.todayPill, { backgroundColor: theme.primary + '18' }]}>
+                <Text style={[styles.todayPillText, { color: theme.primary }]}>Ready</Text>
+              </View>
+            </View>
+            <Text style={[styles.dayTitle, { color: theme.text }]}>Ready when you are.</Text>
+            <View style={styles.dayStatus}>
+              <View style={[styles.statusDot, { backgroundColor: theme.primary }]} />
+              <Text style={[styles.daySub, { color: theme.textMuted }]}>
+                MyTap Wallet is ready · {formatPula(totalBalance)}
+              </Text>
+            </View>
+          </GlassCard>
+        </StaggeredItem>
+
+        {/* MYTAP MARKET */}
+        <StaggeredItem index={7}>
+          <ScreenHeader title="MyTap market" subtitle="Utilities, reimagined as proxies." />
+        </StaggeredItem>
+
+        {/* BPC · TOKEN LIFESPAN PREDICTOR */}
+        <StaggeredItem index={8}>
+          <GlassCard style={styles.marketCard} bubbleStrength={0.5}>
+            <View style={styles.marketHead}>
+              <View style={[styles.marketIcon, { backgroundColor: '#F5A62318' }]}>
+                <Ionicons name="flash" size={19} color="#F5A623" />
+              </View>
+              <View style={styles.marketHeadText}>
+                <Text style={[styles.marketKicker, { color: theme.textMuted }]}>
+                  BPC · TOKEN LIFESPAN PREDICTOR
+                </Text>
+                <Text style={[styles.marketMeta, { color: theme.textMuted }]}>
+                  Meter 14085142801
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.marketRows}>
+              <View style={styles.marketRow}>
+                <Text style={[styles.marketRowLabel, { color: theme.textMuted }]}>Last load</Text>
+                <Text style={[styles.marketRowValue, { color: theme.text }]}>{formatPx(200)}</Text>
+              </View>
+              <View style={styles.marketRow}>
+                <Text style={[styles.marketRowLabel, { color: theme.textMuted }]}>Est. remaining</Text>
+                <Text style={[styles.marketRowValue, { color: theme.text }]}>42 kWh</Text>
+              </View>
+            </View>
+
+            <Button
+              title="Auto-Refill Token · P200"
+              variant="primary"
+              fullWidth
+              onPress={() => router.push('/utilities' as never)}
+            />
+          </GlassCard>
+        </StaggeredItem>
+
+        {/* WUC · WATER INVOICE + CHOPPIES · CASHBACK MARKET */}
+        <View style={styles.marketSplit}>
+          <StaggeredItem index={9} style={styles.marketSplitItem}>
+            <GlassCard style={styles.marketCardSm} bubbleStrength={0.5}>
+              <View style={[styles.marketIcon, { backgroundColor: '#2ECC7118' }]}>
+                <Ionicons name="water" size={19} color="#2ECC71" />
+              </View>
+              <Text style={[styles.marketKicker, { color: theme.textMuted }]}>
+                WUC · WATER INVOICE
+              </Text>
+              <Text style={[styles.marketMeta, { color: theme.textMuted }]}>Statement 15 Sep</Text>
+
+              <Text style={[styles.marketRowLabel, { color: theme.textMuted, marginTop: spacing.md }]}>
+                Unpaid invoice
+              </Text>
+              <Text style={[styles.marketAmount, { color: theme.text }]}>{formatPula(340.5)}</Text>
+              <Text style={[styles.marketDue, { color: theme.danger }]}>
+                Due in 4 days · 6 Sep
+              </Text>
+
+              <Button
+                title="Pay in One-Tap"
+                variant="primary"
+                fullWidth
+                onPress={() => router.push('/utilities' as never)}
+                style={styles.marketBtnSm}
+              />
             </GlassCard>
           </StaggeredItem>
 
-          {/* Guardrail preview */}
-          <StaggeredItem index={6}>
-            <PressableScale onPress={() => go('/guardrail')}>
-              <GlassCard solid bubble={false}>
-                <View style={styles.guardrailHeader}>
-                  <View>
-                    <Text style={[styles.sparkTitle, { color: theme.textMuted }]}>MyTap Guardrail</Text>
-                    <Text style={[styles.sparkValue, { color: theme.text }]}>
-                      P{g.used.toLocaleString()} of P{g.monthlyLimit.toLocaleString()}
-                    </Text>
-                  </View>
-                  <Text style={[styles.guardrailPct, { color: theme.indicator }]}>{g.pct}%</Text>
-                </View>
-                {/* Dual-tone track: soft grey background + crisp violet indicator */}
-                <View style={[styles.progressTrack, { backgroundColor: theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(16,24,40,0.07)' }]}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${Math.min(100, g.pct)}%`, backgroundColor: theme.indicator },
-                    ]}
-                  />
-                </View>
-              </GlassCard>
-            </PressableScale>
+          <StaggeredItem index={10} style={styles.marketSplitItem}>
+            <GlassCard style={styles.marketCardSm} bubbleStrength={0.5}>
+              <View style={[styles.marketIcon, { backgroundColor: '#FF6B4A18' }]}>
+                <Ionicons name="cart" size={19} color="#FF6B4A" />
+              </View>
+              <Text style={[styles.marketKicker, { color: theme.textMuted }]}>
+                CHOPPIES · CASHBACK MARKET
+              </Text>
+              <Text style={[styles.marketMeta, { color: theme.textMuted }]}>Groceries</Text>
+
+              <Text style={[styles.marketAmount, { color: theme.text, marginTop: spacing.md }]}>
+                Spend P100
+              </Text>
+              <Text style={[styles.marketDue, { color: theme.primary }]}>earn P15 credit</Text>
+
+              <Button
+                title="Shop now"
+                variant="ghost"
+                fullWidth
+                onPress={() => router.push('/rewards' as never)}
+                style={styles.marketBtnSm}
+              />
+            </GlassCard>
           </StaggeredItem>
         </View>
-      </ScrollView>
-    </View>
+
+        {/* Recent transactions with the ledger sparkline */}
+        <StaggeredItem index={11}>
+          <ScreenHeader
+            title="Recent activity"
+            subtitle="Where your money moved."
+            actionLabel="See all"
+            onAction={() => router.push('/transactions' as never)}
+          />
+        </StaggeredItem>
+        <StaggeredItem index={12}>
+          <GlassCard solid style={styles.listCard} pressable={false}>
+            {recent.map((t, i) => (
+              <View key={t.id}>
+                <PressableScale
+                  style={styles.txRow}
+                  bubble={false}
+                  onPress={() => router.push('/transactions' as never)}
+                >
+                  <View style={[styles.txIcon, { backgroundColor: t.color + '16' }]}>
+                    <Text style={styles.txEmoji}>{t.icon}</Text>
+                  </View>
+                  <View style={styles.txText}>
+                    <Text style={[styles.txMerchant, { color: theme.text }]} numberOfLines={1}>
+                      {t.merchant}
+                    </Text>
+                    <Text style={[styles.txCategory, { color: theme.textMuted }]}>
+                      {t.category}
+                    </Text>
+                  </View>
+                  <Text style={[styles.txAmount, { color: theme.danger }]}>
+                    {formatPx(t.amount)}
+                  </Text>
+                </PressableScale>
+                {i < recent.length - 1 && (
+                  <View style={[styles.divider, { backgroundColor: theme.hairline }]} />
+                )}
+              </View>
+            ))}
+          </GlassCard>
+        </StaggeredItem>
+
+        {/* NFC Sense banner — dismissible */}
+        {!nfcDismissed && !state.bannerDismissed && (
+          <StaggeredItem index={13}>
+            <View
+              style={[
+                styles.nfcBanner,
+                { backgroundColor: theme.bannerBg, borderColor: theme.bannerBorder },
+              ]}
+            >
+              <View style={styles.nfcLeft}>
+                <View style={[styles.nfcIcon, { backgroundColor: '#F5A62322' }]}>
+                  <Ionicons name="radio-outline" size={18} color="#B8892B" />
+                </View>
+                <View>
+                  <Text style={[styles.nfcTitle, { color: theme.text }]}>POS detected</Text>
+                  <Text style={[styles.nfcSub, { color: theme.textMuted }]}>
+                    A terminal is nearby and ready.
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.nfcRight}>
+                <PressableScale
+                  style={[styles.nfcBtn, { backgroundColor: theme.primary }]}
+                  bubble={false}
+                  onPress={() => router.push('/pay' as never)}
+                >
+                  <Text style={styles.nfcBtnText}>Tap to pay</Text>
+                </PressableScale>
+                <PressableScale
+                  style={styles.nfcClose}
+                  bubble={false}
+                  onPress={() => {
+                    setNfcDismissed(true);
+                    dispatch({ type: 'DISMISS_BANNER' });
+                    haptics.light();
+                  }}
+                >
+                  <Ionicons name="close" size={16} color={theme.textMuted} />
+                </PressableScale>
+              </View>
+            </View>
+          </StaggeredItem>
+        )}
+      </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
-  scroll: {
-    paddingBottom: 120,
+  headerWrap: {
+    marginHorizontal: -spacing.lg,
+    marginTop: -spacing.md,
   },
   body: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    gap: spacing.md,
   },
-  cardWrap: {
-    marginTop: -spacing.xl,
+
+  todayCard: {
+    padding: 16,
   },
-  sectionHeader: {
+  todayTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
-  sectionTitle: {
-    ...type.heading,
+  todayDate: {
+    ...type.label,
+    fontSize: 10.5,
   },
-  sectionTitleFlush: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
+  todayPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
   },
-  seeAll: {
-    ...type.caption,
+  todayPillText: {
+    ...type.small,
     fontWeight: '600',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+  todayTitle: {
+    ...type.heading,
+    fontWeight: '600',
   },
-  acctTile: {
-    width: '48.6%',
+  todaySub: {
+    ...type.caption,
+    marginTop: 2,
+  },
+
+  carousel: {
+    gap: spacing.md,
+    paddingRight: spacing.lg,
+  },
+  carouselItem: {
+    width: 280,
+  },
+
+  telecomCard: {
     borderRadius: radius.card,
-    borderWidth: 1,
-    padding: spacing.md,
-    ...shadows.subtle,
+    padding: 18,
+    overflow: 'hidden',
+    ...shadows.elevated,
   },
-  acctTop: {
+  telecomGlow: {
+    position: 'absolute',
+    top: -70,
+    right: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  telecomTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
   },
-  acctIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+  telecomKicker: {
+    color: 'rgba(255,255,255,0.72)',
+    ...type.label,
+    fontSize: 10,
+  },
+  telecomRing: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  acctLast4: {
+  ringValue: {
+    color: '#fff',
+    ...type.heading,
+    fontWeight: '700',
+    includeFontPadding: false,
+  },
+  ringLabel: {
+    color: 'rgba(255,255,255,0.6)',
     ...type.small,
-    fontVariant: ['tabular-nums'],
+    fontSize: 9,
+    includeFontPadding: false,
   },
-  acctName: {
-    ...type.caption,
-    fontSize: 12,
+  telecomMeta: {
+    flexDirection: 'row',
+    gap: spacing.xxl,
+    marginTop: spacing.lg,
   },
-  acctBalance: {
-    ...type.money,
-    marginTop: 2,
-  },
-  acctFrozen: {
+  telecomMetaItem: {},
+  metaLabel: {
+    color: 'rgba(255,255,255,0.6)',
     ...type.small,
+  },
+  metaValue: {
+    color: '#fff',
+    ...type.subheading,
     fontWeight: '600',
     marginTop: 2,
+    fontVariant: ['tabular-nums'],
   },
-  insightCard: {
-    marginTop: spacing.xl,
+  telecomBtns: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
-  insightRow: {
+  telecomBtn: {
+    flex: 1,
+  },
+  cashbackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.lg,
+  },
+  cashbackText: {
+    color: 'rgba(255,255,255,0.72)',
+    ...type.caption,
+  },
+  cashbackAccent: {
+    color: '#F5A623',
+    fontWeight: '600',
+  },
+
+  dayCard: {
+    padding: 16,
+  },
+  dayTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  dayTitle: {
+    ...type.heading,
+    fontWeight: '600',
+  },
+  dayStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 6,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  daySub: {
+    ...type.caption,
+  },
+
+  marketCard: {
+    padding: 16,
+    gap: spacing.md,
+  },
+  marketCardSm: {
+    padding: 16,
+    flex: 1,
+  },
+  marketSplit: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  marketSplitItem: {
+    flex: 1,
+  },
+  marketHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  insightIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
+  marketHeadText: {
+    flex: 1,
+  },
+  marketIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  insightInfo: {
-    flex: 1,
-  },
-  insightEyebrow: {
-    ...type.small,
+  marketKicker: {
+    ...type.label,
     fontSize: 9.5,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-    marginBottom: 2,
   },
-  insightTitle: {
-    ...type.body,
-    fontWeight: '600',
-  },
-  insightSub: {
+  marketMeta: {
     ...type.caption,
-    fontSize: 12,
     marginTop: 1,
   },
-  spending: {
+  marketRows: {
+    gap: spacing.sm,
+  },
+  marketRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
+    alignItems: 'center',
   },
-  sparkTitle: {
+  marketRowLabel: {
     ...type.caption,
-    fontSize: 12,
   },
-  sparkValue: {
-    ...type.subheading,
-    fontWeight: '600',
-    marginTop: 1,
+  marketRowValue: {
+    ...type.money,
+  },
+  marketAmount: {
+    ...type.money,
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  marketDue: {
+    ...type.small,
+    marginTop: 2,
+  },
+  marketBtnSm: {
+    marginTop: spacing.md,
+  },
+
+  listCard: {
+    padding: 0,
   },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    gap: spacing.md,
   },
   txIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
   },
   txEmoji: {
-    fontSize: 15,
+    fontSize: 17,
   },
-  txInfo: {
+  txText: {
     flex: 1,
-    marginRight: spacing.sm,
   },
   txMerchant: {
-    ...type.body,
+    ...type.subheading,
     fontWeight: '600',
+    fontSize: 14.5,
   },
   txCategory: {
     ...type.caption,
-    fontSize: 12,
     marginTop: 1,
   },
   txAmount: {
     ...type.money,
   },
-  guardrailHeader: {
+  divider: {
+    height: 1,
+    marginLeft: 66,
+  },
+
+  nfcBanner: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: radius.card,
+    padding: 12,
+    gap: spacing.sm,
   },
-  guardrailPct: {
-    ...type.heading,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
+  nfcLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
   },
-  progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
+  nfcIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
+  nfcTitle: {
+    ...type.subheading,
+    fontWeight: '600',
+    fontSize: 14.5,
+  },
+  nfcSub: {
+    ...type.small,
+    marginTop: 1,
+  },
+  nfcRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  nfcBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+  },
+  nfcBtnText: {
+    color: '#fff',
+    ...type.caption,
+    fontWeight: '600',
+  },
+  nfcClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
