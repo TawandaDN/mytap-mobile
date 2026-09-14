@@ -41,7 +41,24 @@ export interface AppState {
   biometricEnabled: boolean;
   pin: string;
   totalPoints: number;
+  /** Privacy — masks balances across the app. */
+  hideBalances: boolean;
+  /** Ask for biometrics before every payment. */
+  biometricConfirm: boolean;
+  /** Show a confirmation sheet before paying. */
+  paymentConfirm: boolean;
+  /** Remind me about upcoming payments. */
+  paymentReminders: boolean;
+  /** Dismissed amber notification banner. */
+  bannerDismissed: boolean;
 }
+
+/** Boolean account preferences toggled from More. */
+export type ToggleKey =
+  | 'hideBalances'
+  | 'biometricConfirm'
+  | 'paymentConfirm'
+  | 'paymentReminders';
 
 type Action =
   | { type: 'ADD_MONEY'; cardId: string; amount: number }
@@ -60,7 +77,9 @@ type Action =
   | { type: 'SET_BIOMETRIC'; enabled: boolean }
   | { type: 'SET_PIN'; pin: string }
   | { type: 'ADD_POINTS'; points: number }
-  | { type: 'REDEEM_POINTS'; points: number };
+  | { type: 'REDEEM_POINTS'; points: number }
+  | { type: 'SET_TOGGLE'; key: ToggleKey; value: boolean }
+  | { type: 'DISMISS_BANNER' };
 
 const initialState: AppState = {
   cards: cardsSeed,
@@ -78,6 +97,11 @@ const initialState: AppState = {
   biometricEnabled: false,
   pin: '1234',
   totalPoints: 1250,
+  hideBalances: false,
+  biometricConfirm: true,
+  paymentConfirm: true,
+  paymentReminders: true,
+  bannerDismissed: false,
 };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -210,6 +234,10 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, totalPoints: state.totalPoints + action.points };
     case 'REDEEM_POINTS':
       return { ...state, totalPoints: Math.max(0, state.totalPoints - action.points) };
+    case 'SET_TOGGLE':
+      return { ...state, [action.key]: action.value };
+    case 'DISMISS_BANNER':
+      return { ...state, bannerDismissed: true };
     default:
       return state;
   }

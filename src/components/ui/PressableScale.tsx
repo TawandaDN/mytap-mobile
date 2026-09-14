@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Pressable, PressableProps, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { Pressable, PressableProps, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -7,10 +7,17 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { haptics } from '../../utils/haptics';
+import { useWaterBubble, WaterBubbleLayer } from '../animations/WaterBubble';
 
 /**
- * Pressable with spring scale-down feedback and haptic on press-in.
- * Drop-in replacement for Pressable to give every tap a premium feel.
+ * MyTap pressable surface.
+ *
+ * Every tappable element gets:
+ *  · a subtle press-scale (ease-out, zero bounce)
+ *  · a touch-following water droplet highlight
+ *  · a ripple-free haptic on press-in
+ *
+ * Drop-in replacement for Pressable.
  */
 export function PressableScale({
   children,
@@ -20,6 +27,9 @@ export function PressableScale({
   onPress,
   scaleTo = 0.94,
   haptic = 'pressIn',
+  bubble = true,
+  bubbleStrength = 1,
+  disabled = false,
   ...rest
 }: {
   children: React.ReactNode;
@@ -29,8 +39,12 @@ export function PressableScale({
   onPress?: () => void;
   scaleTo?: number;
   haptic?: 'pressIn' | 'light' | 'medium' | 'none';
-} & Omit<PressableProps, 'style' | 'onPressIn' | 'onPressOut' | 'onPress'>) {
+  /** Touch-following water droplet highlight. */
+  bubble?: boolean;
+  bubbleStrength?: number;
+} & Omit<PressableProps, 'style' | 'onPressIn' | 'onPressOut' | 'onPress' | 'children'>) {
   const scale = useSharedValue(1);
+  const droplet = useWaterBubble();
 
   useEffect(() => {
     scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
@@ -41,23 +55,38 @@ export function PressableScale({
   }));
 
   return (
-    <Animated.View style={[animatedStyle, style]}>
+    <Animated.View style={[animatedStyle, style]} onLayout={bubble ? droplet.onLayout : undefined}>
       <Pressable
         {...rest}
-        onPressIn={() => {
+        disabled={disabled}
+        onPressIn={(e) => {
           scale.value = withTiming(scaleTo, { duration: 300, easing: Easing.out(Easing.cubic) });
           if (haptic === 'pressIn') haptics.pressIn();
           else if (haptic === 'light') haptics.light();
           else if (haptic === 'medium') haptics.medium();
+          if (bubble) droplet.onPressIn(e);
           onPressIn?.();
         }}
         onPressOut={() => {
           scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
           haptics.pressOut();
+          if (bubble) droplet.onPressOut();
           onPressOut?.();
         }}
         onPress={onPress}
       >
+        {bubble && (
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <WaterBubbleLayer
+              x={droplet.x}
+              y={droplet.y}
+              active={droplet.active}
+              width={droplet.width}
+              height={droplet.height}
+              strength={bubbleStrength}
+            />
+          </View>
+        )}
         {children}
       </Pressable>
     </Animated.View>
