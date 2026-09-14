@@ -13,7 +13,7 @@ import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
 import { cardShop } from '../src/data/mock';
 import { formatPula, maskCard } from '../src/utils/format';
-import { spacing, type, radius, shadows } from '../src/theme';
+import { spacing, type, radius } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
