@@ -7,13 +7,12 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/ThemeContext';
 import { useApp } from '../../store/AppStore';
-import { radius, spacing, type, springConfig } from '../../theme';
+import { spacing } from '../../theme';
 import { haptics } from '../../utils/haptics';
 import { WaterBubble } from '../animations/WaterBubble';
 
@@ -56,11 +55,12 @@ export function BiometricLock({ onUnlock }: { onUnlock: () => void }) {
     opacity: unlockOpacity.value,
   }));
 
+  /** Smooth scale-out unlock — ease-out only, never a spring. */
   const doUnlock = () => {
-    haptics.paymentSuccess();
-    unlockScale.value = withSpring(1.06, springConfig);
-    unlockOpacity.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
-    setTimeout(onUnlock, 320);
+    haptics.soft();
+    unlockScale.value = withTiming(1.04, { duration: 800, easing: Easing.out(Easing.cubic) });
+    unlockOpacity.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
+    setTimeout(onUnlock, 620);
   };
 
   useEffect(() => {
@@ -273,7 +273,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    ...springConfig,
   },
   title: {
     color: '#fff',

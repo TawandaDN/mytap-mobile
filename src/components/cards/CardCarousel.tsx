@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import type { SharedValue } from 'react-native-reanimated';
 import Animated, {
   Easing,
   interpolate,
@@ -17,14 +18,24 @@ import { haptics } from '../../utils/haptics';
 const CARD_WIDTH = 300;
 
 /**
- * Swipeable wallet card carousel with spring physics.
- * Active card scales 1.02x, adjacent cards 0.92x + reduced opacity + blur.
+ * Swipeable wallet card carousel.
+ *
+ * Gesture physics come from the pan gesture; the settle is a calm ease-out
+ * (300ms) — never a spring. Cards scale 1.0 → 0.96 and fade 1 → 0.6 as they
+ * move off-centre, with no tilt or rotation.
  */
-export function CardCarousel({ cards }: { cards: WalletCard[] }) {
+export function CardCarousel({
+  cards,
+  onPressCard,
+  hideBalance = false,
+}: {
+  cards: WalletCard[];
+  onPressCard?: (card: WalletCard) => void;
+  hideBalance?: boolean;
+}) {
   const { theme } = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
   const translateX = useSharedValue(0);
-  const width = useRef(0);
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
@@ -44,40 +55,20 @@ export function CardCarousel({ cards }: { cards: WalletCard[] }) {
 
   return (
     <View>
-      <View
-        style={styles.carousel}
-        onLayout={(e) => (width.current = e.nativeEvent.layout.width)}
-      >
+      <View style={styles.carousel}>
         <GestureDetector gesture={pan}>
           <Animated.View style={styles.inner}>
-            {cards.map((card, i) => {
-              const isActive = i === activeIndex;
-              const offset = i - activeIndex;
-              const animatedStyle = useAnimatedStyle(() => {
-                const scale = interpolate(
-                  Math.abs(offset),
-                  [0, 1],
-                  [1.02, 0.92]
-                );
-                const opacity = interpolate(Math.abs(offset), [0, 1], [1, 0.6]);
-                return {
-                  transform: [
-                    { translateX: translateX.value + offset * (CARD_WIDTH + 16) },
-                    { scale },
-                  ],
-                  opacity,
-                };
-              });
-              return (
-                <Animated.View
-                  key={card.id}
-                  style={[styles.cardWrap, animatedStyle]}
-                  pointerEvents={isActive ? 'auto' : 'none'}
-                >
-                  <WalletCardView card={card} active={isActive} />
-                </Animated.View>
-              );
-            })}
+            {cards.map((card, i) => (
+              <CarouselItem
+                key={card.id}
+                card={card}
+                offset={i - activeIndex}
+                translateX={translateX}
+                isActive={i === activeIndex}
+                hideBalance={hideBalance}
+                onPress={() => onPressCard?.(card)}
+              />
+            ))}
           </Animated.View>
         </GestureDetector>
       </View>
@@ -96,14 +87,49 @@ export function CardCarousel({ cards }: { cards: WalletCard[] }) {
   );
 }
 
+/** One carousel slot — its own component so the animation hook is legal. */
+function CarouselItem({
+  card,
+  offset,
+  translateX,
+  isActive,
+  hideBalance,
+  onPress,
+}: {
+  card: WalletCard;
+  offset: number;
+  translateX: SharedValue<number>;
+  isActive: boolean;
+  hideBalance: boolean;
+  onPress: () => void;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const distance = Math.min(Math.abs(offset), 1);
+    const scale = interpolate(distance, [0, 1], [1, 0.96]);
+    const opacity = interpolate(distance, [0, 1], [1, 0.6]);
+    return {
+      transform: [{ translateX: translateX.value + offset * (CARD_WIDTH + 16) }, { scale }],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[styles.cardWrap, animatedStyle]}
+      pointerEvents={isActive ? 'auto' : 'none'}
+    >
+      <WalletCardView card={card} active={isActive} hideBalance={hideBalance} onPress={onPress} />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   carousel: {
-    height: 260,
+    height: 240,
     overflow: 'hidden',
   },
   inner: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
   },
   cardWrap: {
     width: CARD_WIDTH,

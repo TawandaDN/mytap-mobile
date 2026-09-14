@@ -6,27 +6,28 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/ThemeContext';
 import { useApp } from '../../store/AppStore';
-import { radius, spacing, springConfig } from '../../theme';
+import { radius, spacing, type } from '../../theme';
 import { haptics } from '../../utils/haptics';
-import { Confetti } from '../animations/Confetti';
 import { ReceiptView } from '../receipts/ReceiptView';
 import { SlideUpModal } from '../ui/SlideUpModal';
 import { Button } from '../ui/Button';
-import { useToast } from '../ui/Toast';
+import { ShimmerLoader } from '../ui/ShimmerLoader';
+import { SuccessCheck } from '../ui/SuccessCheck';
 import { formatPula } from '../../utils/format';
 
 type Stage = 'idle' | 'holding' | 'processing' | 'success';
 
 /**
- * Tap to Pay — a hold-to-pay NFC-style experience.
- * Hold the card against the terminal, watch the contactless ripple,
- * then a success burst with confetti + haptic + digital receipt.
+ * Tap to Pay — the hold-to-pay NFC experience.
+ *
+ * Hold the card against the terminal, watch the contactless ripple expand,
+ * then a calm success: green glow + checkmark draw + soft haptic, plus the
+ * digital receipt. No confetti, no spinning — everything ease-out.
  */
 export function TapToPay({
   amount,
@@ -39,7 +40,6 @@ export function TapToPay({
 }) {
   const { theme } = useTheme();
   const { dispatch } = useApp();
-  const { show } = useToast();
   const [stage, setStage] = useState<Stage>('idle');
   const [receipt, setReceipt] = useState<any>(null);
   const holdProgress = useSharedValue(0);
@@ -49,7 +49,11 @@ export function TapToPay({
   useEffect(() => {
     if (stage === 'holding') {
       holdProgress.value = withTiming(1, { duration: 1600, easing: Easing.out(Easing.cubic) });
-      ripple.value = withRepeat(withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) }), -1, false);
+      ripple.value = withRepeat(
+        withTiming(1, { duration: 1800, easing: Easing.out(Easing.cubic) }),
+        -1,
+        false
+      );
       holdTimer.current = setTimeout(() => {
         setStage('processing');
         haptics.processing();
@@ -61,7 +65,7 @@ export function TapToPay({
             amount,
             merchant,
             category: 'Tap to Pay',
-            icon: '📱',
+            icon: '📡',
             color: theme.accent,
             method: 'NFC Sticker',
           });
@@ -81,12 +85,13 @@ export function TapToPay({
           setReceipt(r);
           setStage('success');
           haptics.paymentSuccess();
-        }, 1400);
+        }, 900);
       }, 1600);
     }
     return () => {
       if (holdTimer.current) clearTimeout(holdTimer.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
   const holdStyle = useAnimatedStyle(() => ({
@@ -95,12 +100,12 @@ export function TapToPay({
 
   const rippleStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + ripple.value * 1.6 }],
-    opacity: 1 - ripple.value,
+    opacity: 0.6 * (1 - ripple.value),
   }));
 
   const rippleStyle2 = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + ripple.value * 2.4 }],
-    opacity: (1 - ripple.value) * 0.6,
+    opacity: 0.3 * (1 - ripple.value),
   }));
 
   const startHold = () => {
@@ -111,7 +116,8 @@ export function TapToPay({
 
   const cancelHold = () => {
     if (stage === 'holding') {
-      holdProgress.value = withTiming(0, { duration: 200 });
+      holdProgress.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+      ripple.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
       setStage('idle');
       haptics.light();
     }
@@ -134,7 +140,7 @@ export function TapToPay({
             colors={[theme.gradient[0], theme.gradient[1], theme.gradient[2]]}
             style={styles.terminalGradient}
           >
-            <Ionicons name="radio" size={40} color="#fff" />
+            <Ionicons name="radio" size={38} color="#fff" />
             <Text style={styles.terminalText}>
               {stage === 'holding' ? 'Hold to pay…' : 'Tap to pay'}
             </Text>
@@ -149,65 +155,36 @@ export function TapToPay({
       <Pressable
         onPressIn={startHold}
         onPressOut={cancelHold}
-        style={[styles.holdBtn, { backgroundColor: theme.accent }]}
+        style={[styles.holdBtn, { backgroundColor: theme.primary }]}
       >
-        <Ionicons name="finger-print" size={24} color="#fff" />
+        <Ionicons name="finger-print" size={22} color="#fff" />
         <Text style={styles.holdText}>Hold to pay</Text>
       </Pressable>
       <Text style={[styles.hint, { color: theme.textMuted }]}>
         Hold the button against the terminal to pay
       </Text>
 
-      {/* Processing */}
+      {/* Processing — shimmer across the surface, never a spinner */}
       <SlideUpModal visible={stage === 'processing'} onClose={() => {}}>
         <View style={styles.processingWrap}>
-          <PulseSpinner color={theme.accent} />
+          <ShimmerLoader size={110} />
           <Text style={[styles.processingText, { color: theme.text }]}>Contactless payment…</Text>
         </View>
       </SlideUpModal>
 
-      {/* Success */}
+      {/* Success — green glow + checkmark draw + soft haptic */}
       <SlideUpModal visible={stage === 'success'} onClose={close}>
-        <Confetti active={stage === 'success'} />
         <View style={styles.successWrap}>
-          <View style={[styles.successCircle, { backgroundColor: '#2ECC71' }]}>
-            <Ionicons name="checkmark" size={40} color="#fff" />
-          </View>
-          <Text style={[styles.successTitle, { color: theme.text }]}>Payment successful!</Text>
+          <SuccessCheck size={88} />
+          <Text style={[styles.successTitle, { color: theme.text }]}>Payment successful</Text>
           <Text style={[styles.successAmount, { color: theme.text }]}>
             {receipt ? formatPula(receipt.amount) : ''}
           </Text>
           <Text style={[styles.successTo, { color: theme.textMuted }]}>to {merchant}</Text>
         </View>
         {receipt && <ReceiptView receipt={receipt} />}
-        <Button title="Done" onPress={close} style={styles.doneBtn} />
+        <Button title="Done" onPress={close} fullWidth style={styles.doneBtn} />
       </SlideUpModal>
-    </View>
-  );
-}
-
-function PulseSpinner({ color }: { color: string }) {
-  const pulse = useSharedValue(0);
-  const rotate = useSharedValue(0);
-
-  useEffect(() => {
-    pulse.value = withRepeat(withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) }), -1, true);
-    rotate.value = withRepeat(withTiming(360, { duration: 1000, easing: Easing.linear }), -1, false);
-  }, [pulse, rotate]);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.2 }],
-    opacity: 1 - pulse.value * 0.3,
-  }));
-
-  const rotStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotate.value}deg` }],
-  }));
-
-  return (
-    <View style={styles.spinnerWrap}>
-      <Animated.View style={[styles.spinnerRing, { borderColor: 'rgba(255,255,255,0.2)', borderTopColor: color }, rotStyle]} />
-      <Animated.View style={[styles.spinnerPulse, { backgroundColor: color + '33' }, pulseStyle]} />
     </View>
   );
 }
@@ -241,85 +218,57 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
   },
   terminalText: {
     color: '#fff',
-    fontSize: 13,
+    ...type.caption,
     fontWeight: '600',
   },
   terminalSub: {
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 11,
+    ...type.small,
   },
   holdBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: spacing.xxl,
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderRadius: radius.pill,
   },
   holdText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    ...type.subheading,
+    fontWeight: '600',
   },
   hint: {
-    fontSize: 13,
+    ...type.caption,
     marginTop: spacing.md,
   },
   processingWrap: {
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
   },
-  spinnerWrap: {
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
-  },
-  spinnerRing: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 4,
-  },
-  spinnerPulse: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
   processingText: {
-    fontSize: 17,
+    ...type.subheading,
     fontWeight: '600',
+    marginTop: spacing.xl,
   },
   successWrap: {
     alignItems: 'center',
-    paddingVertical: spacing.lg,
-  },
-  successCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
   },
   successTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...type.title,
+    marginTop: spacing.md,
   },
   successAmount: {
-    fontSize: 32,
-    fontWeight: '700',
+    ...type.moneyLarge,
     marginTop: spacing.sm,
   },
   successTo: {
-    fontSize: 15,
+    ...type.body,
     marginTop: 4,
     marginBottom: spacing.lg,
   },
