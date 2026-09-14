@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
@@ -10,7 +10,7 @@ import { Button } from '../src/components/ui/Button';
 import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
 import { formatPula } from '../src/utils/format';
-import { spacing, type, radius } from '../src/theme';
+import { spacing } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
@@ -29,7 +29,7 @@ export default function LoansScreen() {
       </StaggeredItem>
       <StaggeredItem index={1}>
         <GlassCard bubbleColor="rgba(107,58,138,0.15)">
-          <Text style={[styles.eligLabel, { color: theme.textMuted }]}>You're eligible for</Text>
+          <Text style={[styles.eligLabel, { color: theme.textMuted }]}>You&apos;re eligible for</Text>
           <Text style={[styles.eligValue, { color: theme.text }]}>P15,000</Text>
           <Text style={[styles.eligSub, { color: theme.textMuted }]}>Instant approval · low interest</Text>
         </GlassCard>

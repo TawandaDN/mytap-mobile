@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
@@ -14,14 +14,14 @@ import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
 import { airtimeNetworks } from '../src/data/mock';
 import { formatPula } from '../src/utils/format';
-import { spacing, type, radius } from '../src/theme';
+import { spacing, radius } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
 export default function AirtimeScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
   const { show } = useToast();
   const [network, setNetwork] = useState(airtimeNetworks[0]);
   const [phone, setPhone] = useState('+267 71 234 567');

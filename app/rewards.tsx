@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
@@ -10,7 +10,7 @@ import { CountUp } from '../src/components/animations/CountUp';
 import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
 import { shortDate } from '../src/utils/format';
-import { spacing, type, radius } from '../src/theme';
+import { spacing } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
