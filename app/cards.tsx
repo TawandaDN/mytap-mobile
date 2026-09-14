@@ -1,26 +1,30 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  Easing,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
+import { WalletCardView } from '../src/components/cards/WalletCardView';
+import { ScreenHeader } from '../src/components/ui/ScreenHeader';
 import { StaggeredItem } from '../src/components/animations/Staggered';
 import { Button } from '../src/components/ui/Button';
 import { SlideUpModal } from '../src/components/ui/SlideUpModal';
 import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
+import { cardShop } from '../src/data/mock';
 import { formatPula, maskCard } from '../src/utils/format';
-import { spacing, type, radius } from '../src/theme';
+import { spacing, type, radius, shadows } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
+/**
+ * Cards & Wallets.
+ *
+ * The layered card list — each card a real gradient face with its scheme
+ * mark, live balance and masked PAN — plus the Card Shop catalogue
+ * (Virtual · Physical · Metal). Tapping a card opens its details sheet;
+ * there is no 3D flip, no spin.
+ */
 export default function CardsScreen() {
   const { theme } = useTheme();
   const { state, dispatch } = useApp();
@@ -55,50 +59,87 @@ export default function CardsScreen() {
   return (
     <ScreenContainer>
       <StaggeredItem index={0}>
-        <Text style={[styles.title, { color: theme.text }]}>Your cards</Text>
-        <Text style={[styles.subtitle, { color: theme.textMuted }]}>Everything you can tap</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Cards &amp; wallets</Text>
+        <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+          Everything you can tap.
+        </Text>
       </StaggeredItem>
 
+      {/* Layered gradient card list */}
       {state.cards.map((card, i) => (
         <StaggeredItem key={card.id} index={i + 1}>
-          <FlipCard
-            card={card}
-            onAdd={() => openAdd(card.id)}
-            onFreeze={() => toggleFreeze(card.id)}
-            onDetails={() => { setDetailCard(card); haptics.medium(); }}
-          />
+          <View style={styles.cardWrap}>
+            <WalletCardView
+              card={card}
+              height={188}
+              hideBalance={state.hideBalances}
+              onPress={() => {
+                setDetailCard(card);
+                haptics.medium();
+              }}
+            />
+            <View style={styles.cardActions}>
+              <PressableScale
+                style={[styles.actionBtn, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                onPress={() => openAdd(card.id)}
+              >
+                <Ionicons name="add" size={15} color={theme.primary} />
+                <Text style={[styles.actionText, { color: theme.primary }]}>Add money</Text>
+              </PressableScale>
+              <PressableScale
+                style={[styles.actionBtn, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                onPress={() => toggleFreeze(card.id)}
+              >
+                <Ionicons
+                  name={card.frozen ? 'play' : 'pause'}
+                  size={15}
+                  color={theme.textSecondary}
+                />
+                <Text style={[styles.actionText, { color: theme.textSecondary }]}>
+                  {card.frozen ? 'Unfreeze' : 'Freeze'}
+                </Text>
+              </PressableScale>
+            </View>
+          </View>
         </StaggeredItem>
       ))}
 
-      {/* Card shop */}
+      {/* Card Shop */}
       <StaggeredItem index={state.cards.length + 1}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Card shop</Text>
-        <GlassCard bubble={false}>
-          {['MyTap Wallet', 'Mastercard', 'MyZaka Card'].map((name, i) => (
+        <ScreenHeader title="Card shop" subtitle="Order a new card in a tap." />
+      </StaggeredItem>
+
+      <StaggeredItem index={state.cards.length + 2}>
+        <GlassCard solid style={styles.shopCard}>
+          {cardShop.map((p, i) => (
             <PressableScale
-              key={name}
-              style={[styles.shopRow, i > 0 && styles.shopDivider]}
+              key={p.id}
+              style={[styles.shopRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline }]}
               onPress={() => {
                 haptics.light();
-                show(`${name} is already in your wallet`);
+                show(`${p.name} · ${p.priceLabel}`, 'info');
               }}
             >
-              <View style={styles.shopIcon}>
-                <Ionicons name="card" size={18} color={theme.accent} />
+              <View style={[styles.shopIcon, { backgroundColor: p.color + '16' }]}>
+                <Ionicons name={p.icon as any} size={18} color={p.color} />
               </View>
-              <Text style={[styles.shopName, { color: theme.text }]}>{name}</Text>
-              <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+              <View style={styles.shopInfo}>
+                <Text style={[styles.shopName, { color: theme.text }]}>{p.name}</Text>
+                <Text style={[styles.shopBlurb, { color: theme.textMuted }]}>{p.blurb}</Text>
+              </View>
+              <Text style={[styles.shopPrice, { color: theme.text }]}>{p.priceLabel}</Text>
             </PressableScale>
           ))}
         </GlassCard>
       </StaggeredItem>
 
+      {/* Add money sheet */}
       <SlideUpModal visible={!!addCardId} onClose={() => setAddCardId(null)}>
         <Text style={[styles.modalTitle, { color: theme.text }]}>Add money</Text>
         <Text style={[styles.modalSub, { color: theme.textMuted }]}>
           Top up your {state.cards.find((c) => c.id === addCardId)?.name}
         </Text>
-        <View style={[styles.inputWrap, { borderColor: theme.border }]}>
+        <View style={[styles.inputWrap, { borderColor: theme.hairline }]}>
           <Text style={[styles.inputPrefix, { color: theme.textMuted }]}>P</Text>
           <TextInput
             value={amount}
@@ -109,37 +150,52 @@ export default function CardsScreen() {
             style={[styles.input, { color: theme.text }]}
           />
         </View>
-        <Button title="Add money" onPress={confirmAdd} style={styles.modalBtn} />
+        <Button title="Add money" onPress={confirmAdd} fullWidth />
       </SlideUpModal>
 
-      {/* Card details modal */}
+      {/* Card details sheet */}
       <SlideUpModal visible={!!detailCard} onClose={() => setDetailCard(null)}>
         {detailCard && (
           <>
             <Text style={[styles.modalTitle, { color: theme.text }]}>{detailCard.name}</Text>
-            <Text style={[styles.modalSub, { color: theme.textMuted }]}>Card details & settings</Text>
+            <Text style={[styles.modalSub, { color: theme.textMuted }]}>
+              {detailCard.brand} · {detailCard.virtual ? 'Virtual' : 'Physical'}
+            </Text>
+
             <View style={styles.detailGrid}>
               <DetailTile icon="card" label="Number" value={maskCard(detailCard.last4)} theme={theme} />
               <DetailTile icon="calendar" label="Expiry" value={detailCard.expiry} theme={theme} />
               <DetailTile icon="key" label="PIN" value={detailCard.pin} theme={theme} />
               <DetailTile icon="shield" label="CVV" value={detailCard.cvv} theme={theme} />
             </View>
-            <View style={[styles.limitRow, { borderColor: theme.border }]}>
-              <View style={styles.limitInfo}>
+
+            <View style={[styles.limitRow, { borderColor: theme.hairline }]}>
+              <View>
                 <Text style={[styles.limitLabel, { color: theme.textMuted }]}>Daily limit</Text>
-                <Text style={[styles.limitValue, { color: theme.text }]}>{formatPula(detailCard.limit)}</Text>
+                <Text style={[styles.limitValue, { color: theme.text }]}>
+                  {formatPula(detailCard.limit ?? 0)}
+                </Text>
               </View>
-              <View style={[styles.virtualBadge, { backgroundColor: detailCard.virtual ? '#2ECC71' : theme.surfaceAlt }]}>
-                <Text style={[styles.virtualText, { color: detailCard.virtual ? '#fff' : theme.textMuted }]}>
-                  {detailCard.virtual ? 'Virtual' : 'Physical'}
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: detailCard.frozen ? theme.danger : theme.primary },
+                ]}
+              >
+                <Text style={styles.statusBadgeText}>
+                  {detailCard.frozen ? 'Frozen' : 'Active'}
                 </Text>
               </View>
             </View>
+
             <Button
               title={detailCard.frozen ? 'Unfreeze card' : 'Freeze card'}
               variant={detailCard.frozen ? 'primary' : 'danger'}
-              onPress={() => { toggleFreeze(detailCard.id); setDetailCard(null); }}
-              style={styles.modalBtn}
+              fullWidth
+              onPress={() => {
+                toggleFreeze(detailCard.id);
+                setDetailCard(null);
+              }}
             />
           </>
         )}
@@ -148,116 +204,23 @@ export default function CardsScreen() {
   );
 }
 
-function DetailTile({ icon, label, value, theme }: { icon: any; label: string; value: string; theme: any }) {
+function DetailTile({
+  icon,
+  label,
+  value,
+  theme,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  theme: any;
+}) {
   return (
     <View style={[styles.detailTile, { backgroundColor: theme.surfaceAlt }]}>
-      <Ionicons name={icon} size={18} color={theme.accent} />
+      <Ionicons name={icon} size={17} color={theme.accent} />
       <Text style={[styles.detailTileLabel, { color: theme.textMuted }]}>{label}</Text>
       <Text style={[styles.detailTileValue, { color: theme.text }]}>{value}</Text>
     </View>
-  );
-}
-
-function FlipCard({
-  card,
-  onFreeze,
-  onAdd,
-  onDetails,
-}: {
-  card: any;
-  onFreeze: () => void;
-  onAdd: () => void;
-  onDetails: () => void;
-}) {
-  const { theme } = useTheme();
-  const flip = useSharedValue(0);
-  const lift = useSharedValue(0);
-
-  const frontStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1000 },
-      { rotateY: `${interpolate(flip.value, [0, 1], [0, 180])}deg` },
-      { translateY: lift.value },
-    ],
-    opacity: flip.value < 0.5 ? 1 : 0,
-  }));
-
-  const backStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1000 },
-      { rotateY: `${interpolate(flip.value, [0, 1], [180, 360])}deg` },
-    ],
-    opacity: flip.value < 0.5 ? 0 : 1,
-  }));
-
-  const toggle = () => {
-    flip.value = withTiming(flip.value === 0 ? 1 : 0, { duration: 300, easing: Easing.out(Easing.cubic) });
-    haptics.flip();
-  };
-
-  const onTilt = () => {
-    lift.value = withTiming(-2, { duration: 300, easing: Easing.out(Easing.cubic) });
-    haptics.soft();
-  };
-
-  const resetTilt = () => {
-    lift.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
-  };
-
-  return (
-    <Pressable onPress={toggle} onPressIn={onTilt} onPressOut={resetTilt} style={styles.flipWrap}>
-      <Animated.View style={[styles.flipFace, frontStyle]}>
-        <GlassCard bubbleColor="rgba(255,255,255,0.2)" style={styles.flipCard}>
-          <View style={styles.cardTop}>
-            <Text style={[styles.cardName, { color: theme.text }]}>{card.name}</Text>
-            <View style={[styles.statusPill, { backgroundColor: card.frozen ? '#E74C3C' : '#2ECC71' }]}>
-              <Text style={styles.statusText}>{card.frozen ? 'Frozen' : 'Active'}</Text>
-            </View>
-          </View>
-          <Text style={[styles.balance, { color: theme.text }]}>{formatPula(card.balance)}</Text>
-          <Text style={[styles.mask, { color: theme.textMuted }]}>{maskCard(card.last4)}</Text>
-          <View style={styles.cardActions}>
-            <Pressable style={styles.actionBtn} onPress={onAdd}>
-              <Ionicons name="add" size={18} color={theme.accent} />
-              <Text style={[styles.actionText, { color: theme.accent }]}>Add money</Text>
-            </Pressable>
-            <Pressable style={styles.actionBtn} onPress={onFreeze}>
-              <Ionicons name={card.frozen ? 'play' : 'pause'} size={18} color={theme.accent} />
-              <Text style={[styles.actionText, { color: theme.accent }]}>
-                {card.frozen ? 'Unfreeze' : 'Freeze'}
-              </Text>
-            </Pressable>
-            <Pressable style={styles.actionBtn} onPress={onDetails}>
-              <Ionicons name="settings" size={18} color={theme.accent} />
-              <Text style={[styles.actionText, { color: theme.accent }]}>Details</Text>
-            </Pressable>
-          </View>
-        </GlassCard>
-      </Animated.View>
-      <Animated.View style={[styles.flipFace, backStyle]}>
-        <GlassCard bubbleColor="rgba(245,166,35,0.2)" style={styles.flipCard}>
-          <Text style={[styles.backTitle, { color: theme.text }]}>Card details</Text>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Card number</Text>
-            <Text style={[styles.detailValue, { color: theme.text }]}>{maskCard(card.last4)}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Type</Text>
-            <Text style={[styles.detailValue, { color: theme.text }]}>{card.type}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Status</Text>
-            <Text style={[styles.detailValue, { color: card.frozen ? '#E74C3C' : '#2ECC71' }]}>
-              {card.frozen ? 'Frozen' : 'Active'}
-            </Text>
-          </View>
-          <Pressable style={styles.flipBtn} onPress={toggle}>
-            <Ionicons name="refresh" size={16} color={theme.textMuted} />
-            <Text style={[styles.flipHintText, { color: theme.textMuted }]}>Tap to flip</Text>
-          </Pressable>
-        </GlassCard>
-      </Animated.View>
-    </Pressable>
   );
 }
 
@@ -270,120 +233,66 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: spacing.xl,
   },
-  sectionTitle: {
-    ...type.heading,
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  flipWrap: {
-    height: 200,
+
+  cardWrap: {
     marginBottom: spacing.lg,
-  },
-  flipFace: {
-    ...StyleSheet.absoluteFill,
-  },
-  flipCard: {
-    flex: 1,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardName: {
-    ...type.heading,
-  },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  statusText: {
-    color: '#fff',
-    ...type.small,
-    fontWeight: '600',
-  },
-  balance: {
-    ...type.moneyLarge,
-    marginTop: spacing.lg,
-  },
-  mask: {
-    ...type.body,
-    letterSpacing: 2,
-    fontVariant: ['tabular-nums'],
-    marginTop: 4,
+    gap: spacing.sm,
   },
   cardActions: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xl,
+    gap: spacing.sm,
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    flex: 1,
+    paddingVertical: 10,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(107,58,138,0.1)',
+    borderWidth: 1,
   },
   actionText: {
     ...type.caption,
     fontWeight: '600',
   },
-  backTitle: {
-    ...type.heading,
-    marginBottom: spacing.lg,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-  },
-  detailLabel: {
-    ...type.caption,
-  },
-  detailValue: {
-    ...type.caption,
-    fontWeight: '600',
-    fontVariant: ['tabular-nums'],
-  },
-  flipBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: spacing.lg,
-    alignSelf: 'center',
-  },
-  flipHintText: {
-    ...type.caption,
+
+  shopCard: {
+    padding: 0,
   },
   shopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     gap: spacing.md,
   },
-  shopDivider: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(16,24,40,0.06)',
-  },
   shopIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(107,58,138,0.1)',
+    width: 38,
+    height: 38,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shopName: {
+  shopInfo: {
     flex: 1,
+  },
+  shopName: {
     ...type.body,
     fontWeight: '600',
   },
+  shopBlurb: {
+    ...type.caption,
+    fontSize: 12,
+    marginTop: 1,
+  },
+  shopPrice: {
+    ...type.money,
+  },
+
   modalTitle: {
     ...type.title,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   modalSub: {
     ...type.caption,
@@ -408,9 +317,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     paddingVertical: spacing.lg,
   },
-  modalBtn: {
-    marginTop: spacing.sm,
-  },
+
   detailGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -419,14 +326,14 @@ const styles = StyleSheet.create({
   },
   detailTile: {
     width: '48%',
+    flexGrow: 1,
     borderRadius: radius.md,
     padding: spacing.md,
-    gap: 4,
+    gap: 3,
   },
   detailTileLabel: {
     ...type.caption,
     fontSize: 12,
-    marginTop: 2,
   },
   detailTileValue: {
     ...type.money,
@@ -441,9 +348,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
-  limitInfo: {
-    flex: 1,
-  },
   limitLabel: {
     ...type.caption,
   },
@@ -452,12 +356,13 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     marginTop: 2,
   },
-  virtualBadge: {
+  statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: radius.pill,
   },
-  virtualText: {
+  statusBadgeText: {
+    color: '#fff',
     ...type.small,
     fontWeight: '600',
   },
