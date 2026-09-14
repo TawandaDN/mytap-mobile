@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Svg, { Circle, G } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
@@ -11,7 +11,7 @@ import { CountUp } from '../src/components/animations/CountUp';
 import { useApp } from '../src/store/AppStore';
 import { buildInsights, categoryBreakdown, monthlySpend } from '../src/utils/insights';
 import { formatPula } from '../src/utils/format';
-import { spacing, type, radius } from '../src/theme';
+import { spacing, radius } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
@@ -132,10 +132,6 @@ export default function InsightsScreen() {
   );
 }
 
-function StaggerItem({ children, index }: { children: React.ReactNode; index: number }) {
-  return <StaggeredItem index={index}>{children}</StaggeredItem>;
-}
-
 function DonutChart({
   data,
   size,
@@ -149,33 +145,37 @@ function DonutChart({
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const total = data.reduce((s, d) => s + d.total, 0) || 1;
-  let offset = 0;
+  // Precompute each arc's start offset up-front: React treats render-scope
+  // bindings as immutable, so nothing may be reassigned while rendering.
+  const arcs = data.reduce<{ d: (typeof data)[number]; offset: number; dash: number }[]>(
+    (acc, d) => {
+      const dash = (d.total / total) * c;
+      const prev = acc[acc.length - 1];
+      acc.push({ d, offset: prev ? prev.offset + prev.dash : 0, dash });
+      return acc;
+    },
+    []
+  );
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(15,23,41,0.08)" strokeWidth={stroke} fill="none" />
-        {data.map((d) => {
-          const frac = d.total / total;
-          const dash = frac * c;
-          const el = (
-            <Circle
-              key={d.category}
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              stroke={d.color}
-              strokeWidth={stroke}
-              strokeLinecap="round"
-              fill="none"
-              strokeDasharray={`${dash} ${c - dash}`}
-              strokeDashoffset={-offset}
-              transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            />
-          );
-          offset += dash;
-          return el;
-        })}
+        {arcs.map(({ d, offset, dash }) => (
+          <Circle
+            key={d.category}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            stroke={d.color}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            fill="none"
+            strokeDasharray={`${dash} ${c - dash}`}
+            strokeDashoffset={-offset}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          />
+        ))}
       </Svg>
       <View style={styles.donutCenter}>
         <Text style={[styles.donutValue, { color: theme.text }]}>{data.length}</Text>
@@ -308,12 +308,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 4,
-  },
-  merchantTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(15,23,41,0.08)',
-    overflow: 'hidden',
   },
   merchantBarTrack: {
     height: 6,
