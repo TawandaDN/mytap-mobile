@@ -1,65 +1,69 @@
 import { Platform, TextStyle } from 'react-native';
 
 /**
- * MyTap Design System — Theme (premium iOS fintech)
+ * MyTap Design System
  *
- * Colors, typography, spacing, radii, shadows, motion.
- * Deep purple→blue header gradient → soft warm-white canvas.
- * Rich solid brand green for primary interactive · metallic matte gold accents.
- * Strict 18px card radii · hairline 1px borders · tabular-nums for money.
+ * Layered backgrounds (deep gradient at the top bleeding into content, cards
+ * floating above with soft shadows), a rounded card system (16-20px radius,
+ * light cards on gradient, consistent 16px inner padding), strong typography
+ * hierarchy, horizontal scroll shortcut cards, dismissible amber banners and
+ * a clean bottom navigation.
+ *
+ * Motion philosophy: zero bounciness. Smooth glass, fluid water, confident
+ * slide — never spring, bounce, elastic, overshoot or rubber-band.
  */
 
+/* ============ COLOR ============ */
+
 export const palette = {
-  // Signature header gradient (deep purple → blue)
-  headerA: '#3B2560',
-  headerB: '#2A3A86',
-  headerC: '#1E4FA8',
+  // Primary gradient — deep navy
+  navyA: '#0F1729',
+  navyB: '#1E3A5F',
+  navyC: '#2D3B6B',
 
-  // Card gradients
-  walletA: '#241C4E',
-  walletB: '#2E3A78',
-  walletC: '#1E4FA8',
-  mastercardA: '#1C2450',
-  mastercardB: '#33427E',
-  mastercardC: '#B8892B',
-  myzakaA: '#2A1C4E',
-  myzakaB: '#4A2E7A',
-  myzakaC: '#7C5CFF',
+  // Accents
+  coral: '#FF6B4A',
+  gold: '#F5A623',
+  emerald: '#2ECC71',
+  purple: '#6B3A8A',
 
-  // Brand
-  green: '#0B6B4F',
-  greenDeep: '#07553E',
-  greenBright: '#0E8A5F',
-  gold: '#B8892B',
-  goldLight: '#D4AF37',
-  violet: '#6D5AE6',
-  coral: '#E5604A',
-  deepPurple: '#3B2560',
-  emerald: '#0E8A5F',
+  // Surfaces
+  background: '#F5F7FA',
+  surface: '#FFFFFF',
 
-  // Backgrounds
-  bgLight: '#FAF8F4',
-  bgWhite: '#FFFFFF',
-  bgDark: '#0B0E14',
+  // Glass
+  glassBg: 'rgba(255,255,255,0.06)',
+  glassBorder: 'rgba(255,255,255,0.08)',
+
+  // Card gradients — MyTap Wallet
+  walletA: '#1A2A4A',
+  walletB: '#2D3B6B',
+  walletC: '#FF6B4A',
+  // Mastercard
+  mastercardA: '#2D3B6B',
+  mastercardB: '#4A6A8A',
+  mastercardC: '#F5A623',
+  // MyZaka
+  myzakaA: '#1A2A4A',
+  myzakaB: '#3D2B6B',
+  myzakaC: '#8A4A9A',
+  // Premium
+  premiumA: '#0F1729',
+  premiumB: '#1E3A5F',
+  premiumC: '#2D3B6B',
 
   // Text
   textPrimary: '#101828',
   textSecondary: '#344054',
   textMuted: '#7A8699',
-  textOnDark: 'rgba(255,255,255,0.88)',
+  textOnDark: 'rgba(255,255,255,0.92)',
   textOnDarkMuted: 'rgba(255,255,255,0.62)',
-
-  // Glass
-  glassBg: 'rgba(255,255,255,0.08)',
-  glassBorder: 'rgba(255,255,255,0.12)',
-  glassBgLight: 'rgba(255,255,255,0.7)',
-  glassBorderLight: 'rgba(255,255,255,0.8)',
 
   // Status
   danger: '#D92D20',
-  success: '#0E8A5F',
-  warning: '#B8892B',
-  info: '#1E4FA8',
+  success: '#2ECC71',
+  warning: '#F5A623',
+  info: '#1E3A5F',
 } as const;
 
 export type ThemeMode = 'light' | 'dark';
@@ -73,7 +77,7 @@ export interface Theme {
   textSecondary: string;
   textMuted: string;
   border: string;
-  /** Faint 1px border that makes white containers pop off the cream canvas. */
+  /** Faint 1px border so white containers pop cleanly off the warm canvas. */
   hairline: string;
   glassBg: string;
   glassBorder: string;
@@ -84,36 +88,29 @@ export interface Theme {
   /** Rich solid brand green — primary interactive buttons + success. */
   primary: string;
   primaryDeep: string;
-  /** Polished metallic matte gold. */
+  /** Polished metallic matte gold — never dull mud-yellow. */
   gold: string;
-  /** Crisp violet indicator for data visualisations. */
+  /** Crisp indicator for data visualisations. */
   indicator: string;
   glassShadow: string;
-  /** Error / danger tone. */
   danger: string;
   /** Strict card corner radius. */
   cardRadius: number;
-  /** Signature gradient (background orbs / hero). */
   gradient: readonly [string, string, string];
-  /** Deep purple→blue header gradient. */
+  /** Deep navy header gradient (top ~30% of Home). */
   headerGradient: readonly [string, string, string];
-  /** Accent gradient for buttons / highlights. */
   accentGradient: readonly [string, string, string];
-  /** Polished metallic matte gold gradient (with depth, not muddy). */
   goldGradient: readonly [string, string, string];
   /** Water bubble tint. */
   bubble: string;
+  /** Amber notification banner. */
+  bannerBg: string;
+  bannerBorder: string;
 }
 
-/* ============ THEME DEFINITIONS ============ */
+/* ============ THEMES ============ */
 
-export type ThemeId =
-  | 'midnight'
-  | 'indigo'
-  | 'coral'
-  | 'emerald'
-  | 'obsidian'
-  | 'rosegold';
+export type ThemeId = 'cream' | 'purple' | 'violet' | 'fuchsia' | 'midnight';
 
 export interface ThemeDef {
   id: ThemeId;
@@ -128,9 +125,9 @@ const baseLight: Omit<
   'accent' | 'accent2' | 'gradient' | 'headerGradient' | 'accentGradient' | 'goldGradient' | 'bubble'
 > = {
   mode: 'light',
-  background: palette.bgLight,
-  surface: palette.bgWhite,
-  surfaceAlt: '#F2EFE9',
+  background: palette.background,
+  surface: palette.surface,
+  surfaceAlt: '#EDF1F7',
   text: palette.textPrimary,
   textSecondary: palette.textSecondary,
   textMuted: palette.textMuted,
@@ -140,13 +137,16 @@ const baseLight: Omit<
   glassBorder: 'rgba(255,255,255,0.85)',
   glassBgLight: 'rgba(255,255,255,0.82)',
   glassBorderLight: 'rgba(255,255,255,0.95)',
-  primary: palette.green,
-  primaryDeep: palette.greenDeep,
-  gold: palette.gold,
-  indicator: palette.violet,
+  primary: '#0B6B4F',
+  primaryDeep: '#07553E',
+  gold: '#B8892B',
+  /** Crisp violet indicator for data-visualisation tracks. */
+  indicator: '#6B4FE0',
   glassShadow: 'rgba(16,24,40,0.08)',
   danger: palette.danger,
   cardRadius: 18,
+  bannerBg: 'rgba(245,166,35,0.12)',
+  bannerBorder: 'rgba(245,166,35,0.28)',
 };
 
 const baseDark: Omit<
@@ -154,25 +154,27 @@ const baseDark: Omit<
   'accent' | 'accent2' | 'gradient' | 'headerGradient' | 'accentGradient' | 'goldGradient' | 'bubble'
 > = {
   mode: 'dark',
-  background: palette.bgDark,
+  background: '#0B0E14',
   surface: '#141922',
   surfaceAlt: '#1C2330',
   text: 'rgba(255,255,255,0.94)',
   textSecondary: 'rgba(255,255,255,0.76)',
-  textMuted: 'rgba(255,255,255,0.5)',
+  textMuted: 'rgba(255,255,255,0.52)',
   border: 'rgba(255,255,255,0.1)',
   hairline: 'rgba(255,255,255,0.07)',
-  glassBg: 'rgba(255,255,255,0.06)',
-  glassBorder: 'rgba(255,255,255,0.12)',
+  glassBg: palette.glassBg,
+  glassBorder: palette.glassBorder,
   glassBgLight: 'rgba(255,255,255,0.1)',
   glassBorderLight: 'rgba(255,255,255,0.16)',
-  primary: palette.greenBright,
-  primaryDeep: palette.green,
-  gold: palette.goldLight,
+  primary: '#12A673',
+  primaryDeep: '#0B6B4F',
+  gold: '#E6C463',
   indicator: '#9D8CFF',
-  glassShadow: 'rgba(0,0,0,0.45)',
+  glassShadow: 'rgba(0,0,0,0.5)',
   danger: '#FF6B5E',
   cardRadius: 18,
+  bannerBg: 'rgba(245,166,35,0.14)',
+  bannerBorder: 'rgba(245,166,35,0.3)',
 };
 
 function makeTheme(
@@ -186,48 +188,84 @@ function makeTheme(
   bubble: string
 ): Theme {
   const base = mode === 'light' ? baseLight : baseDark;
-  return { ...base, mode, accent, accent2, gradient, headerGradient, accentGradient, goldGradient, bubble };
+  return {
+    ...base,
+    mode,
+    accent,
+    accent2,
+    gradient,
+    headerGradient,
+    accentGradient,
+    goldGradient,
+    bubble,
+  };
 }
 
-const GOLD_GRAD = ['#D9B44A', '#C29A2E', '#9E7A1E'] as const;
+const GOLD_GRAD = ['#E6C463', '#D2A63C', '#9E7A1E'] as const;
+const GREEN_GRAD = ['#12A673', '#0B6B4F', '#07553E'] as const;
 
 export const THEMES: Record<ThemeId, ThemeDef> = {
-  midnight: {
-    id: 'midnight',
-    name: 'Midnight Navy',
-    emoji: '🌌',
+  cream: {
+    id: 'cream',
+    name: 'Cream',
+    emoji: '🍦',
     light: makeTheme(
       'light',
-      '#1E4FA8',
-      '#6D5AE6',
-      ['#3B2560', '#2A3A86', '#1E4FA8'],
-      ['#3B2560', '#2A3A86', '#1E4FA8'],
-      ['#0B6B4F', '#0E7A5C', '#12946E'],
+      '#FF6B4A',
+      '#F5A623',
+      ['#0F1729', '#1E3A5F', '#2D3B6B'],
+      ['#0F1729', '#1E3A5F', '#2D3B6B'],
+      [...GREEN_GRAD],
       [...GOLD_GRAD],
-      'rgba(30,79,168,0.1)'
+      'rgba(255,107,74,0.1)'
     ),
     dark: makeTheme(
       'dark',
-      '#5B8DEF',
-      '#9D8CFF',
-      ['#12162A', '#1E2A55', '#2A3A86'],
-      ['#241C46', '#2A3A86', '#1E4FA8'],
-      ['#0E8A5F', '#12A673', '#17C48A'],
+      '#FF8A6B',
+      '#FFC46B',
+      ['#0B1018', '#17233B', '#2A3B5E'],
+      ['#0B1018', '#17233B', '#2A3B5E'],
+      ['#12A673', '#0E8A5F', '#0B6B4F'],
       [...GOLD_GRAD],
-      'rgba(255,255,255,0.08)'
+      'rgba(255,138,107,0.1)'
     ),
   },
-  indigo: {
-    id: 'indigo',
-    name: 'Royal Indigo',
+  purple: {
+    id: 'purple',
+    name: 'Purple',
+    emoji: '🟣',
+    light: makeTheme(
+      'light',
+      '#6B3A8A',
+      '#FF6B4A',
+      ['#241547', '#3D2B6B', '#6B3A8A'],
+      ['#1E1240', '#3D2B6B', '#6B3A8A'],
+      [...GREEN_GRAD],
+      [...GOLD_GRAD],
+      'rgba(107,58,138,0.1)'
+    ),
+    dark: makeTheme(
+      'dark',
+      '#B98CD8',
+      '#FF8A6B',
+      ['#160C29', '#2A1745', '#4A2A70'],
+      ['#160C29', '#2A1745', '#4A2A70'],
+      ['#12A673', '#0E8A5F', '#0B6B4F'],
+      [...GOLD_GRAD],
+      'rgba(185,140,216,0.1)'
+    ),
+  },
+  violet: {
+    id: 'violet',
+    name: 'Violet',
     emoji: '💜',
     light: makeTheme(
       'light',
       '#5B3BC4',
       '#8B7BF0',
-      ['#2E1B6B', '#4A2FA8', '#7C5CFF'],
-      ['#2E1B6B', '#4A2FA8', '#5B3BC4'],
-      ['#0B6B4F', '#0E7A5C', '#12946E'],
+      ['#1E1240', '#3A2385', '#6B4FE0'],
+      ['#1E1240', '#3A2385', '#5B3BC4'],
+      [...GREEN_GRAD],
       [...GOLD_GRAD],
       'rgba(91,59,196,0.1)'
     ),
@@ -235,111 +273,61 @@ export const THEMES: Record<ThemeId, ThemeDef> = {
       'dark',
       '#9D8CFF',
       '#C4B8FF',
-      ['#150C33', '#2E1B6B', '#4A2FA8'],
-      ['#21134F', '#3A2385', '#5B3BC4'],
-      ['#0E8A5F', '#12A673', '#17C48A'],
+      ['#100826', '#251556', '#3A2385'],
+      ['#100826', '#251556', '#3A2385'],
+      ['#12A673', '#0E8A5F', '#0B6B4F'],
       [...GOLD_GRAD],
       'rgba(157,140,255,0.1)'
     ),
   },
-  coral: {
-    id: 'coral',
-    name: 'Sunset Coral',
-    emoji: '🌅',
+  fuchsia: {
+    id: 'fuchsia',
+    name: 'Fuchsia',
+    emoji: '🌸',
     light: makeTheme(
       'light',
-      '#E5604A',
-      '#B8892B',
-      ['#7A2E3E', '#C2453F', '#E5604A'],
-      ['#5C2440', '#9E3B44', '#E5604A'],
-      ['#0B6B4F', '#0E7A5C', '#12946E'],
+      '#C2318F',
+      '#FF6B4A',
+      ['#3A0F35', '#7A2168', '#C2318F'],
+      ['#3A0F35', '#7A2168', '#C2318F'],
+      [...GREEN_GRAD],
       [...GOLD_GRAD],
-      'rgba(229,96,74,0.1)'
+      'rgba(194,49,143,0.1)'
     ),
     dark: makeTheme(
       'dark',
+      '#E87CC0',
       '#FF8A6B',
-      '#FFC46B',
-      ['#2A1018', '#7A2E3E', '#E5604A'],
-      ['#3A1420', '#9E3B44', '#E5604A'],
-      ['#0E8A5F', '#12A673', '#17C48A'],
-      ['#E6C463', '#D9B44A', '#B8912E'],
-      'rgba(255,138,107,0.1)'
+      ['#22061F', '#4A0F42', '#8A2470'],
+      ['#22061F', '#4A0F42', '#8A2470'],
+      ['#12A673', '#0E8A5F', '#0B6B4F'],
+      [...GOLD_GRAD],
+      'rgba(232,124,192,0.1)'
     ),
   },
-  emerald: {
-    id: 'emerald',
-    name: 'Emerald',
-    emoji: '💚',
+  midnight: {
+    id: 'midnight',
+    name: 'Midnight',
+    emoji: '🌙',
     light: makeTheme(
       'light',
-      '#0B6B4F',
-      '#12946E',
-      ['#08382B', '#0B6B4F', '#12946E'],
-      ['#0A3A2E', '#0B5B45', '#0E7A5C'],
-      ['#0B6B4F', '#12946E', '#17C48A'],
+      '#1E3A5F',
+      '#6B3A8A',
+      ['#0F1729', '#1E3A5F', '#2D3B6B'],
+      ['#0F1729', '#1E3A5F', '#2D3B6B'],
+      [...GREEN_GRAD],
       [...GOLD_GRAD],
-      'rgba(11,107,79,0.1)'
+      'rgba(30,58,95,0.1)'
     ),
     dark: makeTheme(
       'dark',
-      '#17C48A',
-      '#7BE0B8',
-      ['#04211A', '#0B6B4F', '#12946E'],
-      ['#062A21', '#0B5B45', '#12946E'],
-      ['#0E8A5F', '#12A673', '#17C48A'],
+      '#5B8DEF',
+      '#B98CD8',
+      ['#05080F', '#0F1729', '#1E3A5F'],
+      ['#05080F', '#0F1729', '#1E3A5F'],
+      ['#12A673', '#0E8A5F', '#0B6B4F'],
       [...GOLD_GRAD],
-      'rgba(23,196,138,0.1)'
-    ),
-  },
-  obsidian: {
-    id: 'obsidian',
-    name: 'Obsidian',
-    emoji: '🖤',
-    light: makeTheme(
-      'light',
-      '#2B3A4F',
-      '#6D5AE6',
-      ['#161B22', '#2B3A4F', '#1E4FA8'],
-      ['#161B22', '#242B36', '#1E4FA8'],
-      ['#0B6B4F', '#0E7A5C', '#12946E'],
-      [...GOLD_GRAD],
-      'rgba(43,58,79,0.1)'
-    ),
-    dark: makeTheme(
-      'dark',
-      '#8A9BB5',
-      '#9D8CFF',
-      ['#05070A', '#161B22', '#2B3A4F'],
-      ['#05070A', '#12161C', '#1E3A6B'],
-      ['#0E8A5F', '#12A673', '#17C48A'],
-      ['#D9B44A', '#C29A2E', '#9E7A1E'],
       'rgba(255,255,255,0.07)'
-    ),
-  },
-  rosegold: {
-    id: 'rosegold',
-    name: 'Rose Gold',
-    emoji: '🌹',
-    light: makeTheme(
-      'light',
-      '#B76E79',
-      '#C9A24A',
-      ['#6E3A46', '#A85A66', '#D9A0A8'],
-      ['#5C2E3C', '#96606E', '#C98F98'],
-      ['#0B6B4F', '#0E7A5C', '#12946E'],
-      [...GOLD_GRAD],
-      'rgba(183,110,121,0.1)'
-    ),
-    dark: makeTheme(
-      'dark',
-      '#E8A0A8',
-      '#E6C463',
-      ['#2E141C', '#7A3A46', '#C98F98'],
-      ['#3A1A24', '#8A4652', '#C98F98'],
-      ['#0E8A5F', '#12A673', '#17C48A'],
-      ['#E6C463', '#D9B44A', '#B8912E'],
-      'rgba(232,160,168,0.1)'
     ),
   },
 };
@@ -349,42 +337,49 @@ export const THEME_LIST: ThemeDef[] = Object.values(THEMES);
 export const lightTheme: Theme = THEMES.midnight.light;
 export const darkTheme: Theme = THEMES.midnight.dark;
 
-/**
- * Font family — Inter (crisp high-end geometric sans) loaded via expo-font.
- * Mirrors SF Pro proportions for the iOS fintech feel.
- */
+/* ============ TYPOGRAPHY ============ */
+
+/** Inter — crisp high-end geometric sans, SF Pro proportions. */
 export const fonts = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
   semibold: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
-  extrabold: 'Inter_800ExtraBold',
   light: 'Inter_300Light',
-  thin: 'Inter_200ExtraLight',
 } as const;
 
-/**
- * Full Inter type scale (pt).
- * Medium-bold weights (never heavy black) with letter-spacing + generous
- * line-height so text blocks breathe and never feel squished.
- */
-/** Identity helper — pins each scale entry to a concrete TextStyle so
- * `...type.body` can be spread inside StyleSheet.create without TS widening
- * the surrounding style to the ViewStyle | ImageStyle | TextStyle union. */
+/** Identity helper — pins each entry to a concrete TextStyle so spreads
+ * inside StyleSheet.create keep their literal width. */
 const t = (s: TextStyle): TextStyle => s;
 
+/**
+ * Inter type scale. Hero is a Light (300) 40pt face; titles are medium-bold
+ * (never heavy black) with letter-spacing + generous line-height so text
+ * blocks breathe and never feel squished.
+ */
 export const type = {
-  hero: t({ fontSize: 40, lineHeight: 48, fontWeight: '600', fontFamily: fonts.semibold, letterSpacing: -0.8 }),
-  display: t({ fontSize: 34, lineHeight: 42, fontWeight: '700', fontFamily: fonts.bold, letterSpacing: -0.6 }),
-  largeTitle: t({ fontSize: 27, lineHeight: 35, fontWeight: '600', fontFamily: fonts.semibold, letterSpacing: -0.4 }),
-  title: t({ fontSize: 22, lineHeight: 30, fontWeight: '600', fontFamily: fonts.semibold, letterSpacing: -0.2 }),
-  heading: t({ fontSize: 18, lineHeight: 26, fontWeight: '600', fontFamily: fonts.semibold, letterSpacing: -0.1 }),
-  subheading: t({ fontSize: 16, lineHeight: 24, fontWeight: '500', fontFamily: fonts.medium, letterSpacing: 0 }),
+  /** Hero balance — 40pt Light, leading 1.0 */
+  hero: t({ fontSize: 40, lineHeight: 44, fontWeight: '300', fontFamily: fonts.light, letterSpacing: -0.8 }),
+  /** Large title — 28pt Bold, leading 1.1 */
+  largeTitle: t({ fontSize: 28, lineHeight: 33, fontWeight: '700', fontFamily: fonts.bold, letterSpacing: -0.4 }),
+  /** Title — 22pt SemiBold, leading 1.2 */
+  title: t({ fontSize: 22, lineHeight: 28, fontWeight: '600', fontFamily: fonts.semibold, letterSpacing: -0.2 }),
+  /** Heading — 18pt SemiBold, leading 1.3 */
+  heading: t({ fontSize: 18, lineHeight: 24, fontWeight: '600', fontFamily: fonts.semibold, letterSpacing: -0.1 }),
+  /** Subheading / medium label — 16pt Medium, leading 1.4 */
+  subheading: t({ fontSize: 16, lineHeight: 22, fontWeight: '500', fontFamily: fonts.medium, letterSpacing: 0 }),
+  /** Body — 15pt Regular, leading 1.5 */
   body: t({ fontSize: 15, lineHeight: 23, fontWeight: '400', fontFamily: fonts.regular, letterSpacing: 0.05 }),
-  caption: t({ fontSize: 13, lineHeight: 19, fontWeight: '400', fontFamily: fonts.regular, letterSpacing: 0.05 }),
-  label: t({ fontSize: 11, lineHeight: 16, fontWeight: '500', fontFamily: fonts.medium, letterSpacing: 0.6 }),
-  small: t({ fontSize: 10, lineHeight: 14, fontWeight: '400', fontFamily: fonts.regular, letterSpacing: 0.1 }),
-  /** Tabular-nums money style — decimals align perfectly when stacked. */
+  /** Caption — 13pt Regular, leading 1.4 */
+  caption: t({ fontSize: 13, lineHeight: 18, fontWeight: '400', fontFamily: fonts.regular, letterSpacing: 0.05 }),
+  /** Label — 11pt Medium, leading 1.3 */
+  label: t({ fontSize: 11, lineHeight: 14, fontWeight: '500', fontFamily: fonts.medium, letterSpacing: 0.6 }),
+  /** Micro — 10pt */
+  small: t({ fontSize: 10, lineHeight: 13, fontWeight: '400', fontFamily: fonts.regular, letterSpacing: 0.2 }),
+
+  display: t({ fontSize: 34, lineHeight: 40, fontWeight: '700', fontFamily: fonts.bold, letterSpacing: -0.6 }),
+
+  /** Tabular-nums money — decimals align perfectly when stacked. */
   money: t({
     fontSize: 15,
     lineHeight: 22,
@@ -394,8 +389,8 @@ export const type = {
     fontVariant: ['tabular-nums'],
   }),
   moneyLarge: t({
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 30,
+    lineHeight: 38,
     fontWeight: '700',
     fontFamily: fonts.bold,
     letterSpacing: -0.5,
@@ -403,7 +398,9 @@ export const type = {
   }),
 };
 
-/** 4px grid spacing. */
+/* ============ SPACING & RADIUS ============ */
+
+/** 4px grid. */
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -413,78 +410,134 @@ export const spacing = {
   xxl: 24,
   xxxl: 32,
   huge: 40,
+  giant: 48,
 } as const;
 
-/** Corner radii — cards strictly 18px. */
+/** Corner radii — cards strictly 18px, surfaces 16-20px. */
 export const radius = {
   sm: 12,
   md: 16,
   lg: 18,
   card: 18,
-  xl: 22,
-  xxl: 26,
+  xl: 20,
+  xxl: 24,
   pill: 999,
 } as const;
 
-/** Strict card radius helper. */
 export const CARD_RADIUS = 18;
 
-/** Shadow system: subtle → hero (layered, clean bank-card drop shadows). */
+/** Consistent 16px inner card padding. */
+export const CARD_PADDING = 16;
+
+/* ============ SHADOWS ============ */
+
+/** Layered drop shadows — cards float above the gradient canvas. */
 export const shadows = {
   subtle: {
-    shadowColor: '#101828',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     elevation: 1,
   },
-  soft: {
-    shadowColor: '#101828',
-    shadowOffset: { width: 0, height: 4 },
+  standard: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  elevated: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 48,
+    elevation: 8,
+  },
+  premium: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.16,
+    shadowRadius: 64,
+    elevation: 12,
+  },
+  /* Legacy aliases — older surfaces reference these names. */
+  soft: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
   },
   medium: {
-    shadowColor: '#101828',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 22,
-    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 48,
+    elevation: 8,
   },
   hero: {
-    shadowColor: '#101828',
-    shadowOffset: { width: 0, height: 16 },
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 24 },
     shadowOpacity: 0.16,
-    shadowRadius: 34,
-    elevation: 10,
+    shadowRadius: 64,
+    elevation: 12,
   },
 } as const;
 
-/** Motion — refined ease-out; springs reserved for drag/gesture only. */
-export const spring = {
-  damping: 0.85,
-  stiffness: 220,
-  mass: 0.9,
+/** Back-compat aliases used by older surfaces. */
+export const shadowAliases = {
+  soft: shadows.standard,
+  medium: shadows.elevated,
+  hero: shadows.premium,
 } as const;
 
+/* ============ MOTION ============ */
+
+/**
+ * Motion — refined ease-out; zero bounciness.
+ * Springs are reserved strictly for drag/gesture physics.
+ */
+export const spring = { damping: 0.9, stiffness: 200, mass: 1 } as const;
+
 export const springConfig = {
-  damping: 0.85,
-  stiffness: 220,
-  mass: 0.9,
+  damping: 0.9,
+  stiffness: 200,
+  mass: 1,
   overshootClamping: true,
   restDisplacementThreshold: 0.01,
   restSpeedThreshold: 0.01,
 } as const;
 
-/** Canonical motion durations (ms) + easing, per the refined spec. */
+/** Canonical durations (ms) + easing per the motion spec. */
 export const motion = {
-  hover: { duration: 300, easing: 'out' as const },
-  transition: { duration: 300, easing: 'out' as const },
-  balance: { duration: 400, easing: 'out' as const },
-  ring: { duration: 1500, easing: 'out' as const },
+  fade: { duration: 300, easing: 'out' as const },
+  slide: { duration: 400, easing: 'inOut' as const },
+  scale: { duration: 400, easing: 'out' as const },
+  count: { duration: 500, easing: 'out' as const },
+  stroke: { duration: 1500, easing: 'out' as const },
   shimmer: { duration: 6000, easing: 'linear' as const },
+  /** Card hover — 2px vertical lift + shadow intensification. */
+  hover: { duration: 300, easing: 'out' as const },
+  /** Screen transition — crossfade + scale 0.98 → 1.0. */
+  transition: { duration: 300, easing: 'out' as const },
+  /** Balance update — lands precisely, never overshoots. */
+  balance: { duration: 400, easing: 'out' as const },
+  /** Progress ring — steady stroke 0% → target. */
+  ring: { duration: 1500, easing: 'out' as const },
+  /** Payment success — green glow + checkmark draw + soft haptic. */
   success: { duration: 800, easing: 'out' as const },
+} as const;
+
+/** Touch-following water droplet highlight. */
+export const WATER_BUBBLE = {
+  /** Highlight centre offset within the element. */
+  offsetX: 0.3,
+  offsetY: -0.2,
+  /** Highlight radius as a fraction of the element's larger side. */
+  radius: 0.6,
+  /** Peak opacity of the white highlight at the surface. */
+  opacity: 0.12,
 } as const;
 
 /* ============ TEXTURE SKINS ============ */
@@ -495,18 +548,16 @@ export interface Skin {
   id: SkinId;
   name: string;
   emoji: string;
-  /** Glass surface tint. */
   glassBg: string;
   glassBorder: string;
   /** Subtle repeating texture overlay (rgba). */
   texture: string;
-  /** Material feel label. */
   material: string;
   /** Shadow depth multiplier (0.6 soft → 1.4 deep). */
   shadowDepth: number;
   /** Top inner highlight for embossed depth. */
   highlight: string;
-  /** Inset shadow for inset/embossed elements. */
+  /** Inset shade for inset/embossed elements. */
   inset: string;
   /** Brushed-metal sheen overlay (rgba). */
   sheen: string;
@@ -520,7 +571,7 @@ export const SKINS: Record<SkinId, Skin> = {
     glassBg: 'rgba(24,26,34,0.74)',
     glassBorder: 'rgba(255,255,255,0.14)',
     texture: 'rgba(255,255,255,0.025)',
-    material: 'Ceramic body with brushed alloy sheen',
+    material: 'Ceramic body, brushed alloy sheen',
     shadowDepth: 1.3,
     highlight: 'rgba(255,255,255,0.16)',
     inset: 'rgba(0,0,0,0.42)',

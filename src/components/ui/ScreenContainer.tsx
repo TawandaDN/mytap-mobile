@@ -1,26 +1,22 @@
-import React, { useCallback, useRef, useState } from 'react';
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from 'react-native';
+import React from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
 import { spacing } from '../../theme';
-import { GlassSpinner } from './GlassSpinner';
-import { AnimatedBackground } from '../animations/AnimatedBackground';
+import { MeshBackdrop } from '../animations/MeshBackdrop';
+import { ENTER_SCALE, timing } from '../animations/motion';
 
 /**
- * Screen container with safe area, themed background, staggered entry,
- * and a custom glassmorphism pull-to-refresh spinner.
+ * Screen container.
+ *
+ * Safe area + layered animated backdrop + the canonical screen transition:
+ * a crossfade with scale 0.98 → 1.0 over 300ms ease-out. No pop, no bounce,
+ * no slide-from-bottom.
  */
 export function ScreenContainer({
   children,
@@ -30,6 +26,8 @@ export function ScreenContainer({
   style,
   contentContainerStyle,
   edges = ['top', 'bottom'],
+  /** Renders the layered gradient backdrop behind the content. */
+  backdrop = true,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
@@ -38,20 +36,18 @@ export function ScreenContainer({
   style?: ViewStyle;
   contentContainerStyle?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  backdrop?: boolean;
 }) {
   const { theme } = useTheme();
   const entry = useSharedValue(0);
-  const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    entry.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
-    const t = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(t);
+    entry.value = withTiming(1, timing.fade);
   }, [entry]);
 
   const entryStyle = useAnimatedStyle(() => ({
     opacity: entry.value,
-    transform: [{ scale: 0.98 + entry.value * 0.02 }],
+    transform: [{ scale: ENTER_SCALE + entry.value * (1 - ENTER_SCALE) }],
   }));
 
   const refreshControl = onRefresh ? (
@@ -66,9 +62,7 @@ export function ScreenContainer({
   ) : undefined;
 
   const content = (
-    <Animated.View style={[styles.content, entryStyle, contentContainerStyle]}>
-      {children}
-    </Animated.View>
+    <Animated.View style={[styles.content, entryStyle, contentContainerStyle]}>{children}</Animated.View>
   );
 
   return (
@@ -76,11 +70,12 @@ export function ScreenContainer({
       edges={edges}
       style={[styles.safe, { backgroundColor: theme.background }, style]}
     >
-      <AnimatedBackground />
+      {backdrop && <MeshBackdrop />}
       {scroll ? (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
           refreshControl={refreshControl}
         >
           {content}
@@ -100,7 +95,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 132,
   },
   content: {
     paddingHorizontal: spacing.lg,
