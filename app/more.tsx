@@ -1,26 +1,30 @@
 import React from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
-import { SettingsGroup } from '../src/components/ui/SettingsGroup';
+import { ScreenHeader } from '../src/components/ui/ScreenHeader';
 import { StaggeredItem } from '../src/components/animations/Staggered';
 import { useToast } from '../src/components/ui/Toast';
-import { useApp } from '../src/store/AppStore';
+import { useApp, ToggleKey } from '../src/store/AppStore';
 import { userProfile } from '../src/data/mock';
+import { THEME_LIST, ThemeId } from '../src/theme';
 import { spacing, type, radius, shadows } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
 /**
- * More hub — grouped, scannable sections with headers + icons.
- * Hosts the destinations that no longer live in the tab bar
- * (Cards · Tariff · Sticker) plus the full super-app catalogue.
+ * More — the profile hub.
+ *
+ * A verified profile header, the APPEARANCE · THEMES selector, a grouped
+ * toggle list, and the full catalogue of destinations that do not live in
+ * the tab bar. No flat list: everything is grouped, headed and scannable.
  */
 export default function MoreScreen() {
-  const { theme } = useTheme();
+  const { theme, themeId, setThemeId, mode, toggleMode } = useTheme();
   const router = useRouter();
   const { state, dispatch } = useApp();
   const { show } = useToast();
@@ -30,135 +34,259 @@ export default function MoreScreen() {
     router.push(path);
   };
 
+  const toggle = (key: ToggleKey, value: boolean, label: string) => {
+    dispatch({ type: 'SET_TOGGLE', key, value });
+    haptics.toggle();
+    show(`${label} ${value ? 'on' : 'off'}`, 'info');
+  };
+
   const sections: {
     title: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    items: { icon: keyof typeof Ionicons.glyphMap; label: string; sub?: string; color: string; onPress: () => void }[];
+    items: {
+      icon: keyof typeof Ionicons.glyphMap;
+      label: string;
+      sub?: string;
+      color: string;
+      onPress: () => void;
+    }[];
   }[] = [
     {
       title: 'Money',
-      icon: 'wallet',
       items: [
-        { icon: 'card', label: 'Cards', sub: 'Manage, freeze & top up', color: '#1E4FA8', onPress: () => go('/cards') },
-        { icon: 'qr-code', label: 'QR Pay', sub: 'Scan · Pay · Receive', color: '#3B2560', onPress: () => go('/qr') },
-        { icon: 'receipt', label: 'Receipts', sub: 'Digital receipts & exports', color: '#0E8A5F', onPress: () => go('/receipts') },
-        { icon: 'swap-horizontal', label: 'Transactions', sub: 'Full history & search', color: '#1E4FA8', onPress: () => go('/transactions') },
+        { icon: 'card', label: 'Cards & wallets', sub: 'Manage, freeze & top up', color: '#1E3A5F', onPress: () => go('/cards') },
+        { icon: 'qr-code', label: 'QR Pay', sub: 'Scan · Pay · Receive', color: '#6B3A8A', onPress: () => go('/qr') },
+        { icon: 'receipt', label: 'Receipts', sub: 'Digital receipts & exports', color: '#0B6B4F', onPress: () => go('/receipts') },
+        { icon: 'swap-horizontal', label: 'Transactions', sub: 'Full history & search', color: '#1E3A5F', onPress: () => go('/transactions') },
         { icon: 'flash', label: 'Pay bills', sub: 'BPC · WUC · DStv · BTC', color: '#B8892B', onPress: () => go('/utilities') },
-        { icon: 'phone-portrait', label: 'Airtime', sub: 'Mascom · BTC · Orange', color: '#E5604A', onPress: () => go('/airtime') },
-        { icon: 'cellular', label: 'Data bundles', sub: 'Buy data & auto-renew', color: '#0E8A5F', onPress: () => go('/data-bundles') },
+        { icon: 'call', label: 'Airtime', sub: 'Mascom · BTC · Orange', color: '#FF6B4A', onPress: () => go('/airtime') },
+        { icon: 'wifi', label: 'Data bundles', sub: 'Buy data & auto-renew', color: '#0B6B4F', onPress: () => go('/data-bundles') },
       ],
     },
     {
       title: 'Grow',
-      icon: 'trending-up',
       items: [
-        { icon: 'sparkles', label: 'Insights', sub: 'Personalized spending analysis', color: '#6D5AE6', onPress: () => go('/insights') },
-        { icon: 'trending-up', label: 'Savings goals', color: '#0E8A5F', onPress: () => go('/savings') },
-        { icon: 'cash', label: 'Loans', color: '#3B2560', onPress: () => go('/loans') },
-        { icon: 'shield-checkmark', label: 'Insurance', color: '#1E4FA8', onPress: () => go('/insurance') },
+        { icon: 'sparkles', label: 'Insights', sub: 'Personalized spending analysis', color: '#6B4FE0', onPress: () => go('/insights') },
+        { icon: 'trending-up', label: 'Savings goals', color: '#0B6B4F', onPress: () => go('/savings') },
+        { icon: 'cash', label: 'Loans', color: '#6B3A8A', onPress: () => go('/loans') },
+        { icon: 'shield-checkmark', label: 'Insurance', color: '#1E3A5F', onPress: () => go('/insurance') },
         { icon: 'gift', label: 'Rewards', color: '#B8892B', onPress: () => go('/rewards') },
-        { icon: 'shield', label: 'Guardrail', sub: 'Monthly spending limit', color: '#0E8A5F', onPress: () => go('/guardrail') },
+        { icon: 'shield', label: 'Guardrail', sub: 'Monthly spending limit', color: '#0B6B4F', onPress: () => go('/guardrail') },
       ],
     },
     {
       title: 'Services',
-      icon: 'grid',
       items: [
-        { icon: 'pricetag', label: 'Tariff & data', sub: 'Usage, bundles, auto-renew', color: '#0E8A5F', onPress: () => go('/tariff') },
-        { icon: 'pricetags', label: 'Stickers', sub: 'NFC sticker design & info', color: '#3B2560', onPress: () => go('/sticker') },
-        { icon: 'sparkles', label: 'MyTap Assistant', sub: 'Ask about spending & data', color: '#6D5AE6', onPress: () => go('/assistant') },
+        { icon: 'pricetag', label: 'Tariff & data', sub: 'Usage, bundles, auto-renew', color: '#0B6B4F', onPress: () => go('/tariff') },
+        { icon: 'pricetags', label: 'Stickers', sub: 'NFC sticker design & info', color: '#6B3A8A', onPress: () => go('/sticker') },
+        { icon: 'sparkles', label: 'MyTap Assistant', sub: 'Ask about spending & data', color: '#6B4FE0', onPress: () => go('/assistant') },
+        { icon: 'notifications', label: 'Notifications', color: '#B8892B', onPress: () => go('/notifications') },
       ],
     },
     {
-      title: 'Account',
-      icon: 'person',
+      title: 'Help',
       items: [
-        { icon: 'person', label: 'Profile', sub: `${userProfile.tier} member`, color: '#1E4FA8', onPress: () => go('/profile') },
-        { icon: 'notifications', label: 'Notifications', color: '#B8892B', onPress: () => go('/notifications') },
-        { icon: 'color-palette', label: 'Theme & appearance', sub: 'Themes, skins, adaptive', color: '#6D5AE6', onPress: () => go('/appearance') },
-        { icon: 'settings', label: 'Settings', color: '#7A8699', onPress: () => go('/settings') },
-        { icon: 'help-circle', label: 'Help & support', color: '#E5604A', onPress: () => go('/help') },
-        { icon: 'information-circle', label: 'About', color: '#3B2560', onPress: () => go('/about') },
+        { icon: 'help-circle', label: 'Help & support', color: '#FF6B4A', onPress: () => go('/help') },
+        { icon: 'information-circle', label: 'About MyTap', color: '#6B3A8A', onPress: () => go('/about') },
       ],
     },
   ];
 
   return (
     <ScreenContainer>
+      {/* Verified profile header */}
       <StaggeredItem index={0}>
-        <Text style={[styles.title, { color: theme.text }]}>More</Text>
-      </StaggeredItem>
-
-      {/* Profile card */}
-      <StaggeredItem index={1}>
-        <PressableScale onPress={() => go('/profile')}>
-          <GlassCard solid bubbleColor={`${theme.indicator}14`}>
-            <View style={styles.profileRow}>
-              <View style={[styles.avatar, { backgroundColor: theme.headerGradient[1] }]}>
-                <Text style={styles.avatarText}>{userProfile.name[0]}</Text>
-              </View>
-              <View style={styles.profileInfo}>
-                <Text style={[styles.profileName, { color: theme.text }]}>{userProfile.fullName}</Text>
-                <Text style={[styles.profilePhone, { color: theme.textMuted }]}>{userProfile.phone}</Text>
-              </View>
-              <View style={[styles.tierBadge, { backgroundColor: theme.gold }]}>
-                <Text style={styles.tierText}>{userProfile.tier}</Text>
-              </View>
+        <GlassCard style={styles.profileCard} bubbleStrength={0.6}>
+          <View style={styles.profileRow}>
+            <View style={[styles.avatar, { backgroundColor: theme.headerGradient[1] }]}>
+              <Text style={styles.avatarText}>{userProfile.initials}</Text>
             </View>
-          </GlassCard>
-        </PressableScale>
-      </StaggeredItem>
-
-      {/* Security row */}
-      <StaggeredItem index={2}>
-        <GlassCard solid bubble={false} style={styles.securityCard}>
-          <View style={styles.shortcutRow}>
-            <View style={[styles.shortcutIcon, { backgroundColor: theme.primary + '16' }]}>
-              <Ionicons name="finger-print" size={19} color={theme.primary} />
-            </View>
-            <View style={styles.shortcutInfo}>
-              <Text style={[styles.shortcutTitle, { color: theme.text }]}>Biometric login</Text>
-              <Text style={[styles.shortcutSub, { color: theme.textMuted }]}>
-                {state.biometricEnabled ? 'Face ID / fingerprint active' : 'Lock the app with Face ID'}
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: theme.text }]}>
+                {userProfile.fullName}
+              </Text>
+              <Text style={[styles.profileMeta, { color: theme.textMuted }]}>
+                {userProfile.phone}
+              </Text>
+              <Text style={[styles.profileMeta, { color: theme.textMuted }]}>
+                {userProfile.email}
               </Text>
             </View>
-            <Switch
-              value={state.biometricEnabled}
-              onValueChange={(v) => {
-                dispatch({ type: 'SET_BIOMETRIC', enabled: v });
-                haptics.toggle();
-                show(v ? 'Biometric login enabled' : 'Biometric login disabled');
-              }}
-              trackColor={{ true: theme.primary, false: 'rgba(16,24,40,0.18)' }}
-              thumbColor="#fff"
-            />
+            <View style={[styles.verified, { backgroundColor: theme.primary + '16' }]}>
+              <Ionicons name="checkmark-circle" size={13} color={theme.primary} />
+              <Text style={[styles.verifiedText, { color: theme.primary }]}>Verified</Text>
+            </View>
           </View>
         </GlassCard>
       </StaggeredItem>
 
-      {/* Grouped sections */}
+      {/* APPEARANCE · THEMES */}
+      <StaggeredItem index={1}>
+        <ScreenHeader title="Appearance · Themes" subtitle="Choose your palette." />
+        <View style={styles.themeRow}>
+          {THEME_LIST.map((t) => {
+            const active = themeId === t.id;
+            return (
+              <PressableScale
+                key={t.id}
+                bubble={false}
+                scaleTo={0.95}
+                style={styles.themeItem}
+                onPress={() => {
+                  setThemeId(t.id as ThemeId);
+                  haptics.selection();
+                }}
+              >
+                <LinearGradient
+                  colors={[t.dark.gradient[0], t.dark.gradient[1], t.dark.gradient[2]]}
+                  style={[
+                    styles.themeSwatch,
+                    {
+                      borderColor: active ? theme.accent : 'transparent',
+                      borderWidth: active ? 2 : 0,
+                    },
+                  ]}
+                >
+                  {active && <Ionicons name="checkmark" size={16} color="#fff" />}
+                </LinearGradient>
+                <Text
+                  style={[styles.themeName, { color: active ? theme.accent : theme.textMuted }]}
+                  numberOfLines={1}
+                >
+                  {t.name}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
+      </StaggeredItem>
+
+      {/* Preferences — grouped toggles */}
+      <StaggeredItem index={2}>
+        <ScreenHeader title="Preferences" subtitle="Security, privacy and reminders." />
+        <GlassCard solid style={styles.toggleCard}>
+          <ToggleRow
+            icon="moon"
+            label="Dark mode"
+            sub="Deep, low-light palette"
+            value={mode === 'dark'}
+            onValueChange={() => {
+              toggleMode();
+              haptics.toggle();
+            }}
+            theme={theme}
+            first
+          />
+          <ToggleRow
+            icon="eye-off"
+            label="Hide balances"
+            sub="Mask amounts across the app"
+            value={state.hideBalances}
+            onValueChange={(v) => toggle('hideBalances', v, 'Hide balances')}
+            theme={theme}
+          />
+          <ToggleRow
+            icon="finger-print"
+            label="Biometric confirmation"
+            sub="Face ID / fingerprint before paying"
+            value={state.biometricConfirm}
+            onValueChange={(v) => toggle('biometricConfirm', v, 'Biometric confirmation')}
+            theme={theme}
+          />
+          <ToggleRow
+            icon="checkmark-done"
+            label="Payment confirmation"
+            sub="Confirm each payment before it sends"
+            value={state.paymentConfirm}
+            onValueChange={(v) => toggle('paymentConfirm', v, 'Payment confirmation')}
+            theme={theme}
+          />
+          <ToggleRow
+            icon="alarm"
+            label="Payment reminders"
+            sub="Alerts before a bill is due"
+            value={state.paymentReminders}
+            onValueChange={(v) => toggle('paymentReminders', v, 'Payment reminders')}
+            theme={theme}
+          />
+        </GlassCard>
+      </StaggeredItem>
+
+      {/* Account */}
+      <StaggeredItem index={3}>
+        <ScreenHeader title="Account" subtitle="Profile and security." />
+        <GlassCard solid style={styles.toggleCard}>
+          <PressableScale
+            style={styles.navRow}
+            onPress={() => go('/profile')}
+          >
+            <View style={[styles.navIcon, { backgroundColor: '#1E3A5F16' }]}>
+              <Ionicons name="person" size={17} color="#1E3A5F" />
+            </View>
+            <View style={styles.navInfo}>
+              <Text style={[styles.navLabel, { color: theme.text }]}>Profile</Text>
+              <Text style={[styles.navSub, { color: theme.textMuted }]}>
+                {userProfile.tier} member · KYC verified
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+          </PressableScale>
+          <PressableScale style={styles.navRow} onPress={() => go('/settings')}>
+            <View style={[styles.navIcon, { backgroundColor: '#0B6B4F16' }]}>
+              <Ionicons name="finger-print" size={17} color="#0B6B4F" />
+            </View>
+            <View style={styles.navInfo}>
+              <Text style={[styles.navLabel, { color: theme.text }]}>Security</Text>
+              <Text style={[styles.navSub, { color: theme.textMuted }]}>
+                Biometrics, PIN, app lock
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+          </PressableScale>
+          <PressableScale style={styles.navRow} onPress={() => go('/appearance')}>
+            <View style={[styles.navIcon, { backgroundColor: '#6B4FE016' }]}>
+              <Ionicons name="color-palette" size={17} color="#6B4FE0" />
+            </View>
+            <View style={styles.navInfo}>
+              <Text style={[styles.navLabel, { color: theme.text }]}>Appearance</Text>
+              <Text style={[styles.navSub, { color: theme.textMuted }]}>
+                Themes, material skins, adaptive
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+          </PressableScale>
+          <PressableScale style={styles.navRow} onPress={() => go('/notifications')}>
+            <View style={[styles.navIcon, { backgroundColor: '#B8892B16' }]}>
+              <Ionicons name="notifications" size={17} color="#B8892B" />
+            </View>
+            <View style={styles.navInfo}>
+              <Text style={[styles.navLabel, { color: theme.text }]}>Notifications</Text>
+              <Text style={[styles.navSub, { color: theme.textMuted }]}>
+                Recent activity alerts
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+          </PressableScale>
+        </GlassCard>
+      </StaggeredItem>
+
+      {/* Grouped destinations */}
       {sections.map((section, si) => (
-        <StaggeredItem key={section.title} index={si + 3}>
-          <View style={styles.groupHeader}>
-            <Ionicons name={section.icon} size={14} color={theme.textMuted} />
-            <Text style={[styles.groupTitle, { color: theme.textMuted }]}>
-              {section.title.toUpperCase()}
-            </Text>
-          </View>
-          <GlassCard solid bubble={false} style={styles.groupCard}>
+        <StaggeredItem key={section.title} index={si + 4}>
+          <ScreenHeader title={section.title} />
+          <GlassCard solid style={styles.toggleCard}>
             {section.items.map((item, i) => (
               <PressableScale
                 key={item.label}
-                style={[styles.menuRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline }]}
+                style={[styles.navRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline }]}
                 onPress={item.onPress}
               >
-                <View style={[styles.menuIcon, { backgroundColor: item.color + '14' }]}>
+                <View style={[styles.navIcon, { backgroundColor: item.color + '14' }]}>
                   <Ionicons name={item.icon} size={17} color={item.color} />
                 </View>
-                <View style={styles.menuInfo}>
-                  <Text style={[styles.menuLabel, { color: theme.text }]}>{item.label}</Text>
+                <View style={styles.navInfo}>
+                  <Text style={[styles.navLabel, { color: theme.text }]}>{item.label}</Text>
                   {item.sub ? (
-                    <Text style={[styles.menuSub, { color: theme.textMuted }]} numberOfLines={1}>
+                    <Text style={[styles.navSub, { color: theme.textMuted }]} numberOfLines={1}>
                       {item.sub}
                     </Text>
                   ) : null}
@@ -171,7 +299,7 @@ export default function MoreScreen() {
       ))}
 
       {/* Sign out */}
-      <StaggeredItem index={sections.length + 3}>
+      <StaggeredItem index={sections.length + 4}>
         <PressableScale
           style={[styles.signOut, { borderColor: theme.hairline, backgroundColor: theme.surface }]}
           onPress={() => {
@@ -187,10 +315,45 @@ export default function MoreScreen() {
   );
 }
 
+function ToggleRow({
+  icon,
+  label,
+  sub,
+  value,
+  onValueChange,
+  theme,
+  first,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sub?: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  theme: any;
+  first?: boolean;
+}) {
+  return (
+    <View style={[styles.navRow, !first && { borderTopWidth: 1, borderTopColor: theme.hairline }]}>
+      <View style={[styles.navIcon, { backgroundColor: theme.accent + '14' }]}>
+        <Ionicons name={icon} size={17} color={theme.accent} />
+      </View>
+      <View style={styles.navInfo}>
+        <Text style={[styles.navLabel, { color: theme.text }]}>{label}</Text>
+        {sub ? <Text style={[styles.navSub, { color: theme.textMuted }]}>{sub}</Text> : null}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ true: theme.primary, false: 'rgba(16,24,40,0.16)' }}
+        thumbColor="#fff"
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  title: {
-    ...type.largeTitle,
-    marginBottom: spacing.xl,
+  profileCard: {
+    padding: 16,
   },
   profileRow: {
     flexDirection: 'row',
@@ -198,9 +361,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -216,89 +379,78 @@ const styles = StyleSheet.create({
     ...type.subheading,
     fontWeight: '600',
   },
-  profilePhone: {
-    ...type.caption,
-    marginTop: 2,
-  },
-  tierBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 999,
-  },
-  tierText: {
-    color: '#fff',
-    ...type.small,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  securityCard: {
-    marginTop: spacing.md,
-  },
-  shortcutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  shortcutIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shortcutInfo: {
-    flex: 1,
-  },
-  shortcutTitle: {
-    ...type.body,
-    fontWeight: '600',
-  },
-  shortcutSub: {
+  profileMeta: {
     ...type.caption,
     fontSize: 12,
     marginTop: 1,
   },
-  groupHeader: {
+  verified: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  verifiedText: {
+    ...type.small,
+    fontWeight: '600',
+  },
+
+  themeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  themeItem: {
+    flex: 1,
     alignItems: 'center',
     gap: 6,
-    marginTop: spacing.xl,
-    marginBottom: spacing.sm,
-    marginLeft: 4,
   },
-  groupTitle: {
-    ...type.label,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+  themeSwatch: {
+    width: '100%',
+    height: 46,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.subtle,
   },
-  groupCard: {
-    marginBottom: 0,
+  themeName: {
+    ...type.small,
+    fontWeight: '600',
   },
-  menuRow: {
+
+  toggleCard: {
+    padding: 0,
+    marginTop: spacing.md,
+  },
+  navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
     gap: spacing.md,
   },
-  menuIcon: {
+  navIcon: {
     width: 34,
     height: 34,
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuInfo: {
+  navInfo: {
     flex: 1,
   },
-  menuLabel: {
+  navLabel: {
     ...type.body,
     fontWeight: '500',
   },
-  menuSub: {
+  navSub: {
     ...type.caption,
     fontSize: 12,
     marginTop: 1,
   },
+
   signOut: {
     marginTop: spacing.xl,
     borderWidth: 1,

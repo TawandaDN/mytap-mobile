@@ -15,6 +15,7 @@ import { PressableScale } from '../src/components/ui/PressableScale';
 interface Tx {
   id: string;
   merchant: string;
+  account?: string;
   category: string;
   amount: number;
   date: string;
@@ -22,13 +23,16 @@ interface Tx {
   color: string;
 }
 
-const FILTERS = ['All', 'Income', 'Groceries', 'Utilities', 'Airtime', 'Data'];
+const FILTERS = ['All', 'Airtime', 'Mascom data', 'Transfer'];
 
 /**
- * History — a dense, native timeline feed grouped strictly by date headers.
- * Each row: a compact circular status icon, a bold merchant title, a soft
- * grey category subtitle, and a right-aligned tabular-nums amount so the
- * decimals align perfectly when stacked. Searchable and filterable.
+ * History — a dense, highly scannable native timeline.
+ *
+ * Grouped strictly by date headers ("August 5, Wed"), each row carries a
+ * compact circular status icon, a distinct merchant title, a soft grey
+ * category subtitle and a right-aligned tabular-nums amount so decimals
+ * align perfectly when stacked. No chat bubbles, no loading streams —
+ * the data is simply present.
  */
 export default function HistoryScreen() {
   const { theme } = useTheme();
@@ -42,13 +46,14 @@ export default function HistoryScreen() {
       const matchesQuery =
         !query.trim() ||
         tx.merchant.toLowerCase().includes(query.toLowerCase()) ||
-        tx.category.toLowerCase().includes(query.toLowerCase());
+        tx.category.toLowerCase().includes(query.toLowerCase()) ||
+        (tx.account ?? '').includes(query);
       const matchesFilter = filter === 'All' || tx.category === filter;
       return matchesQuery && matchesFilter;
     });
   }, [state.transactions, query, filter]);
 
-  // Group strictly by calendar day.
+  /** Group strictly by calendar day. */
   const groups = useMemo(() => {
     const map = new Map<string, Tx[]>();
     filtered.forEach((tx) => {
@@ -62,13 +67,20 @@ export default function HistoryScreen() {
   return (
     <ScreenContainer>
       <StaggeredItem index={0}>
-        <Text style={[styles.title, { color: theme.text }]}>History</Text>
-        <Text style={[styles.subtitle, { color: theme.textMuted }]}>Where your money moved</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Recent transactions</Text>
+        <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+          Where your money moved.
+        </Text>
       </StaggeredItem>
 
-      {/* Search */}
+      {/* Search bar */}
       <StaggeredItem index={1}>
-        <View style={[styles.searchWrap, { backgroundColor: theme.surface, borderColor: theme.hairline }]}>
+        <View
+          style={[
+            styles.searchWrap,
+            { backgroundColor: theme.surface, borderColor: theme.hairline },
+          ]}
+        >
           <Ionicons name="search" size={17} color={theme.textMuted} />
           <TextInput
             value={query}
@@ -110,47 +122,63 @@ export default function HistoryScreen() {
         </View>
       </StaggeredItem>
 
-      {/* Timeline feed, grouped by date */}
+      {/* Timeline feed */}
       {groups.length === 0 ? (
         <StaggeredItem index={3}>
-          <GlassCard solid bubble={false} style={styles.emptyCard}>
-            <Ionicons name="receipt-outline" size={34} color={theme.textMuted} />
-            <Text style={[styles.emptyText, { color: theme.textMuted }]}>No transactions found</Text>
+          <GlassCard solid style={styles.emptyCard}>
+            <Ionicons name="receipt-outline" size={32} color={theme.textMuted} />
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+              No transactions found
+            </Text>
           </GlassCard>
         </StaggeredItem>
       ) : (
         groups.map((group, gi) => (
           <StaggeredItem key={group.header} index={3 + gi}>
             <Text style={[styles.dateHeader, { color: theme.textMuted }]}>{group.header}</Text>
-            <GlassCard solid bubble={false}>
+            <GlassCard solid style={styles.groupCard}>
               {group.items.map((tx, i) => (
                 <PressableScale
                   key={tx.id}
-                  style={[styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline }]}
+                  style={[
+                    styles.row,
+                    i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline },
+                  ]}
                   onPress={() => {
                     haptics.light();
-                    show(`${tx.merchant} · ${formatPx(tx.amount)}`);
+                    show(`${tx.merchant} · ${formatPx(tx.amount)}`, 'info');
                   }}
                 >
-                  <View style={[styles.icon, { backgroundColor: tx.color + '14' }]}>
+                  <View style={[styles.icon, { backgroundColor: tx.color + '12' }]}>
                     <Text style={styles.emoji}>{tx.icon}</Text>
                   </View>
                   <View style={styles.info}>
                     <Text style={[styles.merchant, { color: theme.text }]} numberOfLines={1}>
                       {tx.merchant}
+                      {tx.account ? (
+                        <Text style={[styles.account, { color: theme.textMuted }]}>
+                          {'  ·  '}
+                          {tx.account}
+                        </Text>
+                      ) : null}
                     </Text>
                     <Text style={[styles.category, { color: theme.textMuted }]} numberOfLines={1}>
                       {tx.category}
                     </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.amount,
-                      { color: tx.amount >= 0 ? theme.primary : theme.text },
-                    ]}
-                  >
-                    {formatPx(tx.amount)}
-                  </Text>
+                  <View style={styles.right}>
+                    <Text
+                      style={[
+                        styles.amount,
+                        { color: tx.amount >= 0 ? theme.primary : theme.danger },
+                      ]}
+                    >
+                      {formatPx(tx.amount)}
+                    </Text>
+                    <Text style={[styles.dateInline, { color: theme.textMuted }]}>
+                      {shortDay(tx.date)}
+                    </Text>
+                  </View>
                 </PressableScale>
               ))}
             </GlassCard>
@@ -161,6 +189,7 @@ export default function HistoryScreen() {
   );
 }
 
+/** "2026-08-29" → "August 29, Sat" */
 function dayKey(iso: string) {
   const d = new Date(iso);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -171,6 +200,15 @@ function dayKey(iso: string) {
   return `${months[d.getMonth()]} ${d.getDate()}, ${days[d.getDay()]}`;
 }
 
+function shortDay(iso: string) {
+  const d = new Date(iso);
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
 const styles = StyleSheet.create({
   title: {
     ...type.largeTitle,
@@ -178,7 +216,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...type.caption,
     marginTop: 2,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   searchWrap: {
     flexDirection: 'row',
@@ -215,26 +253,30 @@ const styles = StyleSheet.create({
   dateHeader: {
     ...type.label,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
     marginTop: spacing.xl,
     marginBottom: spacing.sm,
     marginLeft: 4,
   },
+  groupCard: {
+    padding: 0,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   icon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
   emoji: {
-    fontSize: 14,
+    fontSize: 13,
   },
   info: {
     flex: 1,
@@ -242,16 +284,32 @@ const styles = StyleSheet.create({
   },
   merchant: {
     ...type.body,
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: '600',
+  },
+  account: {
+    ...type.small,
+    fontSize: 11,
+    fontWeight: '400',
   },
   category: {
     ...type.caption,
     fontSize: 12,
     marginTop: 1,
   },
+  right: {
+    alignItems: 'flex-end',
+  },
   amount: {
     ...type.money,
+    fontSize: 14.5,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  dateInline: {
+    ...type.small,
+    marginTop: 1,
+    fontVariant: ['tabular-nums'],
   },
   emptyCard: {
     alignItems: 'center',
