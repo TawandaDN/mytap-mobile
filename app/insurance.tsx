@@ -30,7 +30,7 @@ export default function InsuranceScreen() {
       <StaggeredItem index={1}>
         <GlassCard bubbleColor="rgba(52,152,219,0.15)">
           <Text style={[styles.coverLabel, { color: theme.textMuted }]}>Total cover</Text>
-          <Text style={[styles.coverValue, { color: theme.text }]}>{formatPula(state.insurance.reduce((s, p) => s + p.cover, 0))}</Text>
+          <Text style={[styles.coverValue, { color: theme.text }]}>{formatPula(state.insurance.reduce((s, p) => s + p.coverage, 0))}</Text>
           <Text style={[styles.coverSub, { color: theme.textMuted }]}>across {state.insurance.length} policies</Text>
         </GlassCard>
       </StaggeredItem>
@@ -39,7 +39,7 @@ export default function InsuranceScreen() {
           <GlassCard bubble={false}>
             <View style={styles.policyHeader}>
               <View style={[styles.policyIcon, { backgroundColor: p.color + '22' }]}><Ionicons name="shield-checkmark" size={20} color={p.color} /></View>
-              <View style={styles.policyInfo}><Text style={[styles.policyName, { color: theme.text }]}>{p.name}</Text><Text style={[styles.policyCover, { color: theme.textMuted }]}>Cover: {formatPula(p.cover)}</Text></View>
+              <View style={styles.policyInfo}><Text style={[styles.policyName, { color: theme.text }]}>{p.name}</Text><Text style={[styles.policyCover, { color: theme.textMuted }]}>Cover: {formatPula(p.coverage)}</Text></View>
               <View style={[styles.statusPill, { backgroundColor: p.status === 'active' ? '#2ECC71' : '#F5A623' }]}><Text style={styles.statusText}>{p.status === 'active' ? 'Active' : 'Pending'}</Text></View>
             </View>
             <View style={styles.policyFooter}>
