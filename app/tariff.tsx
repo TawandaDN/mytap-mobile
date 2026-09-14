@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
 import { StaggeredItem } from '../src/components/animations/Staggered';
 import { ProgressRing } from '../src/components/ui/ProgressRing';
-import { Button } from '../src/components/ui/Button';
 import { SlideUpModal } from '../src/components/ui/SlideUpModal';
 import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
@@ -150,7 +149,7 @@ export default function TariffScreen() {
           <View style={styles.insightRow}>
             <Ionicons name="bulb-outline" size={20} color="#F5A623" />
             <Text style={[styles.insightText, { color: theme.textSecondary }]}>
-              You're using data faster than usual. Consider adding a bundle before {shortDate(t.renews)}.
+              You&apos;re using data faster than usual. Consider adding a bundle before {shortDate(t.renews)}.
             </Text>
           </View>
         </GlassCard>
