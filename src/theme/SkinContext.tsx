@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SKINS, Skin, SkinId } from './index';
 
@@ -16,6 +17,11 @@ const SkinContext = createContext<SkinContextValue>({
 
 const SKIN_KEY = 'mytap.skin.id';
 
+/** Light haptic on skin change. */
+function hapticTick() {
+  Haptics.selectionAsync().catch(() => {});
+}
+
 export function SkinProvider({ children }: { children: React.ReactNode }) {
   const [skinId, setSkinIdState] = useState<SkinId>('ceramic');
 
@@ -30,12 +36,7 @@ export function SkinProvider({ children }: { children: React.ReactNode }) {
   const setSkinId = (id: SkinId) => {
     setSkinIdState(id);
     AsyncStorage.setItem(SKIN_KEY, id).catch(() => {});
-    try {
-      const Haptics = require('expo-haptics');
-      Haptics.selectionAsync().catch(() => {});
-    } catch {
-      /* noop */
-    }
+    hapticTick();
   };
 
   const skin = useMemo(() => SKINS[skinId], [skinId]);

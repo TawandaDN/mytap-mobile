@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme/ThemeContext';
@@ -10,11 +10,10 @@ import { Button } from '../src/components/ui/Button';
 import { SlideUpModal } from '../src/components/ui/SlideUpModal';
 import { ShimmerLoader } from '../src/components/ui/ShimmerLoader';
 import { SuccessCheck } from '../src/components/ui/SuccessCheck';
-import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
 import { dataBundles } from '../src/data/mock';
 import { formatPula, shortDate } from '../src/utils/format';
-import { spacing, type, radius } from '../src/theme';
+import { spacing } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
@@ -22,11 +21,11 @@ export default function DataBundlesScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const { show } = useToast();
-  const [selected, setSelected] = useState<any>(null);
+  const [selected, setSelected] = useState<(typeof dataBundles)[number] | null>(null);
   const [stage, setStage] = useState<'idle' | 'processing' | 'success'>('idle');
 
   const buy = () => {
+    if (!selected) return;
     setStage('processing');
     haptics.processing();
     setTimeout(() => {
@@ -101,6 +100,16 @@ export default function DataBundlesScreen() {
           ))}
         </GlassCard>
       </StaggeredItem>
+
+      {selected && stage === 'idle' && (
+        <StaggeredItem index={3}>
+          <Button
+            title={`Buy ${selected.name} · ${formatPula(selected.price)}`}
+            onPress={buy}
+            style={styles.payBtn}
+          />
+        </StaggeredItem>
+      )}
 
       <SlideUpModal visible={stage === 'processing'} onClose={() => {}}>
         <View style={styles.center}>
