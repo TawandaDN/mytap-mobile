@@ -1,15 +1,14 @@
 import React from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../src/theme/ThemeContext';
 import { useSkin } from '../src/theme/SkinContext';
-import { THEME_LIST, ThemeId, SKIN_LIST, SkinId } from '../src/theme';
+import { THEME_LIST, ThemeId, SKIN_LIST, SkinId, spacing, radius } from '../src/theme';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
 import { StaggeredItem } from '../src/components/animations/Staggered';
-import { spacing, radius } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
@@ -80,7 +79,7 @@ export default function AppearanceScreen() {
       <StaggeredItem index={3}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Color theme</Text>
         <View style={styles.themeGrid}>
-          {THEME_LIST.map((t, i) => {
+          {THEME_LIST.map((t) => {
             const active = themeId === t.id;
             return (
               <PressableScale
@@ -107,7 +106,8 @@ export default function AppearanceScreen() {
           })}
         </View>
       </StaggeredItem>
-    {/* Texture skin picker */}
+
+      {/* Texture skin picker */}
       <StaggeredItem index={4}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Material skin</Text>
         <Text style={[styles.skinSub, { color: theme.textMuted }]}>
