@@ -43,14 +43,14 @@ export default function TariffScreen() {
         <GlassCard bubbleColor="rgba(46,204,113,0.15)" style={styles.ringCard}>
           <View style={styles.ringWrap}>
             <ProgressRing
-              size={200}
-              strokeWidth={9}
+              size={190}
+              strokeWidth={7}
               progress={t.usedPct / 100}
               color={ringColor}
-              trackColor={theme.mode === 'dark' ? 'rgba(255,255,255,0.09)' : 'rgba(16,24,40,0.06)'}
+              trackColor={theme.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(16,24,40,0.05)'}
             >
-              <Text style={[styles.ringPct, { color: theme.text }]}>{t.usedPct}%</Text>
-              <Text style={[styles.ringLabel, { color: theme.textMuted }]}>used</Text>
+              <Text style={[styles.ringPct, { color: theme.text }]}>{t.leftGB} GB</Text>
+              <Text style={[styles.ringLabel, { color: theme.textMuted }]}>remaining</Text>
             </ProgressRing>
           </View>
           <View style={styles.ringStats}>
@@ -109,19 +109,37 @@ export default function TariffScreen() {
       {/* Usage breakdown */}
       <StaggeredItem index={3}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Usage breakdown</Text>
-        <GlassCard solid bubble={false}>
-          {[
-            { label: 'Social media', value: 3.2, color: '#3498DB' },
-            { label: 'Streaming', value: 2.8, color: '#8A4A9A' },
-            { label: 'Browsing', value: 1.6, color: '#2ECC71' },
-            { label: 'Other', value: 0.8, color: '#F5A623' },
-          ].map((u, i) => (
-            <View key={u.label} style={[styles.usageRow, i > 0 && styles.usageDivider]}>
-              <View style={[styles.usageDot, { backgroundColor: u.color }]} />
-              <Text style={[styles.usageLabel, { color: theme.text }]}>{u.label}</Text>
-              <Text style={[styles.usageValue, { color: theme.textMuted }]}>{u.value}GB</Text>
-            </View>
-          ))}
+        <GlassCard solid style={styles.breakdownCard}>
+          {t.breakdown.map((u, i) => {
+            const pct = Math.round((u.value / t.usedGB) * 100);
+            return (
+              <View key={u.label} style={styles.breakdownItem}>
+                <View style={styles.breakdownHead}>
+                  <View style={[styles.usageDot, { backgroundColor: u.color }]} />
+                  <Text style={[styles.usageLabel, { color: theme.text }]}>{u.label}</Text>
+                  <Text style={[styles.usageValue, { color: theme.textMuted }]}>
+                    {u.value} GB
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.miniTrack,
+                    {
+                      backgroundColor:
+                        theme.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(16,24,40,0.05)',
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.miniFill,
+                      { width: `${pct}%`, backgroundColor: u.color },
+                    ]}
+                  />
+                </View>
+              </View>
+            );
+          })}
         </GlassCard>
       </StaggeredItem>
 
@@ -292,6 +310,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(16,24,40,0.06)',
   },
+  breakdownCard: {
+    gap: spacing.md,
+  },
+  breakdownItem: {
+    gap: 7,
+  },
+  breakdownHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   usageDot: {
     width: 10,
     height: 10,
@@ -304,6 +332,17 @@ const styles = StyleSheet.create({
   },
   usageValue: {
     ...type.money,
+    fontSize: 13,
+  },
+  miniTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginLeft: 23,
+  },
+  miniFill: {
+    height: 4,
+    borderRadius: 2,
   },
   insightRow: {
     flexDirection: 'row',
