@@ -11,14 +11,15 @@ import { spacing, type, radius, shadows } from '../../theme';
 import { haptics } from '../../utils/haptics';
 
 /**
- * Hub header — the deep purple→blue gradient block that sits at the top of
- * Home. Holds the avatar, a standard utility search bar, two uniform
- * utility icons (cart, notifications) with a notification badge, and the
- * primary metric ("Total balance") in a large, bold, tabular-nums face.
+ * Home header — the deep navy gradient block at the top of Home (~30% of the
+ * screen) bleeding into the content canvas below.
+ *
+ * Holds the profile avatar, a utility search bar, a cart icon and a bell with
+ * a notification badge, plus the primary metric (Total Balance) set in the
+ * 40pt Light hero face.
  */
 export function HubHeader({
-  greeting,
-  name,
+  greetingName,
   initial,
   balance,
   searchValue,
@@ -27,9 +28,9 @@ export function HubHeader({
   onCartPress,
   onBellPress,
   unreadCount = 0,
+  hideBalance = false,
 }: {
-  greeting: string;
-  name: string;
+  greetingName: string;
   initial: string;
   balance: number;
   searchValue: string;
@@ -38,24 +39,30 @@ export function HubHeader({
   onCartPress?: () => void;
   onBellPress?: () => void;
   unreadCount?: number;
+  hideBalance?: boolean;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <LinearGradient
-      colors={[...theme.headerGradient]}
+      colors={[theme.headerGradient[0], theme.headerGradient[1], theme.headerGradient[2]]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.header, { paddingTop: insets.top + spacing.md }]}
     >
-      {/* Layered backdrop glow for depth */}
+      {/* Layered backdrop glows for depth */}
       <View style={styles.glowA} pointerEvents="none" />
       <View style={styles.glowB} pointerEvents="none" />
 
       {/* Top row: avatar · utility icons */}
       <View style={styles.topRow}>
-        <PressableScale onPress={onAvatarPress} style={styles.avatar} scaleTo={0.92}>
+        <PressableScale
+          onPress={onAvatarPress}
+          style={styles.avatar}
+          scaleTo={0.92}
+          bubble={false}
+        >
           <Text style={styles.avatarText}>{initial}</Text>
         </PressableScale>
         <View style={styles.utilityRow}>
@@ -66,6 +73,7 @@ export function HubHeader({
               onCartPress?.();
             }}
             scaleTo={0.9}
+            bubble={false}
           >
             <Ionicons name="cart-outline" size={17} color="rgba(255,255,255,0.92)" />
           </PressableScale>
@@ -76,17 +84,13 @@ export function HubHeader({
               onBellPress?.();
             }}
             scaleTo={0.9}
+            bubble={false}
           >
             <Ionicons name="notifications-outline" size={17} color="rgba(255,255,255,0.92)" />
             {unreadCount > 0 && <View style={styles.badge} />}
           </PressableScale>
         </View>
       </View>
-
-      {/* Greeting */}
-      <Text style={styles.greeting}>
-        {greeting}, {name}
-      </Text>
 
       {/* Search bar (inside the gradient) */}
       <View style={styles.searchWrap}>
@@ -100,15 +104,23 @@ export function HubHeader({
         />
       </View>
 
-      {/* Primary metric */}
-      <Text style={styles.balanceLabel}>Total balance</Text>
-      <CountUp
-        value={balance}
-        format={(v) => formatPula(v)}
-        duration={400}
-        glow="none"
-        style={styles.balance}
-      />
+      {/* Greeting */}
+      <Text style={styles.greeting}>Good morning, {greetingName}</Text>
+      <Text style={styles.greetingSub}>Here&apos;s what needs your attention.</Text>
+
+      {/* Primary metric — Total Balance in the 40pt Light hero face */}
+      <Text style={styles.balanceLabel}>Total Balance</Text>
+      {hideBalance ? (
+        <Text style={styles.balance}>P••••••</Text>
+      ) : (
+        <CountUp
+          value={balance}
+          format={(v) => formatPula(v)}
+          duration={400}
+          glow="none"
+          style={styles.balance}
+        />
+      )}
     </LinearGradient>
   );
 }
@@ -116,11 +128,11 @@ export function HubHeader({
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl + 4,
-    borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26,
+    paddingBottom: spacing.xxxl,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     overflow: 'hidden',
-    ...shadows.medium,
+    ...shadows.elevated,
   },
   glowA: {
     position: 'absolute',
@@ -158,35 +170,30 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#fff',
     ...type.subheading,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   utilityRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
   utilityBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   badge: {
     position: 'absolute',
-    top: 8,
-    right: 9,
+    top: 7,
+    right: 8,
     width: 7,
     height: 7,
     borderRadius: 3.5,
     backgroundColor: '#FF6B4A',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.9)',
-  },
-  greeting: {
-    color: 'rgba(255,255,255,0.82)',
-    ...type.body,
-    marginTop: spacing.lg,
   },
   searchWrap: {
     flexDirection: 'row',
@@ -197,8 +204,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 11,
-    marginTop: spacing.md,
+    paddingVertical: 10,
+    marginTop: spacing.lg,
   },
   searchInput: {
     flex: 1,
@@ -207,14 +214,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     padding: 0,
   },
+  greeting: {
+    color: 'rgba(255,255,255,0.94)',
+    ...type.heading,
+    fontWeight: '500',
+    marginTop: spacing.xl,
+  },
+  greetingSub: {
+    color: 'rgba(255,255,255,0.62)',
+    ...type.caption,
+    marginTop: 2,
+  },
   balanceLabel: {
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(255,255,255,0.62)',
     ...type.caption,
     marginTop: spacing.xl,
   },
   balance: {
     color: '#fff',
     ...type.hero,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
 });
