@@ -34,14 +34,14 @@ type Segment = 'scan' | 'pay' | 'receive';
  */
 export default function PayScreen() {
   const { theme } = useTheme();
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
   const { show } = useToast();
   const [segment, setSegment] = useState<Segment>('scan');
   const [selected, setSelected] = useState(merchants[0]);
   const [amount, setAmount] = useState('');
   const [stage, setStage] = useState<PayStage>('idle');
   const [receipt, setReceipt] = useState<any>(null);
-  const [phone, setPhone] = useState(userProfile.phone);
+  const [phone] = useState(userProfile.phone);
   const [tapMode, setTapMode] = useState(false);
 
   const startPayment = (amt?: number) => {
