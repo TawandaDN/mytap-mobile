@@ -1,103 +1,100 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
-import { useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { WalletCard as WalletCardType } from '../../data/mock';
-import { fonts, radius, shadows, type } from '../../theme';
+import { radius, shadows, type } from '../../theme';
 import { formatPula, maskCard } from '../../utils/format';
 import { WaterBubble } from '../animations/WaterBubble';
 import { CountUp } from '../animations/CountUp';
-import { Sparkline } from '../charts/Sparkline';
+import { PressableScale } from '../ui/PressableScale';
 
 /**
- * Premium gradient wallet card with water bubble, 3D floating effect,
- * and MyTap Glow radial highlight.
+ * Wallet card — a gradient card face for the Home carousel and the
+ * Cards & Wallets list. Carries the scheme mark, the live balance and the
+ * masked PAN, with a touch-following water droplet across its surface.
  */
 export function WalletCardView({
   card,
-  active = false,
+  width,
+  height = 196,
   onPress,
   style,
+  hideBalance = false,
+  /** Marks the centred card in a carousel — adds a restrained depth lift. */
+  active = true,
 }: {
   card: WalletCardType;
-  active?: boolean;
+  width?: number;
+  height?: number;
   onPress?: () => void;
   style?: object;
+  hideBalance?: boolean;
+  active?: boolean;
 }) {
-  const float = useSharedValue(0);
-
-  useEffect(() => {
-    float.value = withRepeat(
-      withTiming(1, { duration: 3000 }),
-      -1,
-      true
-    );
-  }, [float]);
-
-  const floatStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: float.value * 6 }],
-  }));
-
   return (
-    <Animated.View style={[styles.wrap, floatStyle, style]}>
+    <PressableScale
+      onPress={onPress}
+      scaleTo={0.97}
+      bubble={false}
+      style={[styles.wrap, width ? { width } : null, style] as any}
+    >
       <LinearGradient
-        colors={[...card.gradient]}
+        colors={[card.gradient[0], card.gradient[1], card.gradient[2]]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.gradient}
+        style={[styles.gradient, { height, opacity: active ? 1 : 0.9 }]}
       >
-        <WaterBubble color="rgba(255,255,255,0.16)" />
-        {/* MyTap Glow radial highlight */}
-        <View style={styles.glow} />
+        <WaterBubble color="rgba(255,255,255,0.12)" />
+        <View style={styles.glow} pointerEvents="none" />
+
         <View style={styles.topRow}>
-          <Text style={styles.cardName}>{card.name}</Text>
+          <Text style={styles.cardName} numberOfLines={1}>
+            {card.name}
+          </Text>
           <View style={styles.chip}>
             <View style={styles.chipInner} />
           </View>
         </View>
+
         <View style={styles.balanceRow}>
           <Text style={styles.balanceLabel}>Available balance</Text>
-          <CountUp
-            value={card.balance}
-            format={(v) => formatPula(v)}
-            glow="emerald"
-            style={styles.balance}
-          />
+          {hideBalance ? (
+            <Text style={styles.balance}>P••••••</Text>
+          ) : (
+            <CountUp
+              value={card.balance}
+              format={(v) => formatPula(v)}
+              glow="none"
+              style={styles.balance}
+            />
+          )}
         </View>
-        {/* Live ledger sparkline */}
-        <View style={styles.sparkRow}>
-          <Sparkline data={[3, 4, 3.5, 5, 4.5, 6, 5.5, 7, 6.5, 8]} width={110} height={30} color="rgba(255,255,255,0.85)" />
-          <Text style={styles.sparkLabel}>30d</Text>
-        </View>
+
         <View style={styles.bottomRow}>
           <Text style={styles.mask}>{maskCard(card.last4)}</Text>
-          <Text style={styles.brand}>MyTap</Text>
+          <Text style={styles.brand}>{card.brand}</Text>
         </View>
+
         {card.frozen && (
           <View style={styles.frozenBadge}>
+            <Ionicons name="snow" size={10} color="#fff" />
             <Text style={styles.frozenText}>Frozen</Text>
           </View>
         )}
       </LinearGradient>
-    </Animated.View>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    borderRadius: radius.xxl,
-    ...shadows.hero,
+    borderRadius: radius.card,
+    ...shadows.elevated,
   },
   gradient: {
-    borderRadius: radius.xxl,
+    borderRadius: radius.card,
     padding: 20,
-    height: 220,
     justifyContent: 'space-between',
     overflow: 'hidden',
   },
@@ -116,37 +113,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardName: {
-    color: 'rgba(255,255,255,0.9)',
+    color: 'rgba(255,255,255,0.94)',
     ...type.subheading,
     fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
   },
   chip: {
-    width: 40,
-    height: 30,
+    width: 38,
+    height: 28,
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   chipInner: {
-    width: 26,
-    height: 18,
-    borderRadius: 4,
+    width: 24,
+    height: 17,
+    borderRadius: 3,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.55)',
   },
   balanceRow: {
     marginTop: 8,
-  },
-  sparkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  sparkLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 10,
   },
   balanceLabel: {
     color: 'rgba(255,255,255,0.6)',
@@ -154,37 +143,41 @@ const styles = StyleSheet.create({
   },
   balance: {
     color: '#fff',
-    ...type.largeTitle,
-    fontWeight: '700',
+    ...type.moneyLarge,
+    marginTop: 2,
   },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
   mask: {
     color: 'rgba(255,255,255,0.85)',
-    ...type.subheading,
-    letterSpacing: 2,
+    ...type.caption,
+    letterSpacing: 1.6,
+    fontVariant: ['tabular-nums'],
   },
   brand: {
     color: 'rgba(255,255,255,0.9)',
-    ...type.heading,
+    ...type.small,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 1.6,
   },
   frozenBadge: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(231,76,60,0.85)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    top: 14,
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(217,45,32,0.9)',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
     borderRadius: 999,
   },
   frozenText: {
     color: '#fff',
-    fontSize: 11,
+    ...type.small,
     fontWeight: '600',
   },
 });
