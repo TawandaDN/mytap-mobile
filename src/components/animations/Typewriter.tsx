@@ -3,6 +3,9 @@ import { StyleProp, Text, TextStyle } from 'react-native';
 
 /**
  * Typewriter effect — reveals text character by character.
+ *
+ * NOTE: intentional, bounded synchronous state set on mount so the first
+ * frame starts from an empty string before the reveal interval begins.
  */
 export function Typewriter({
   text,
@@ -16,6 +19,7 @@ export function Typewriter({
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCount(0);
     const id = setInterval(() => {
       setCount((c) => {

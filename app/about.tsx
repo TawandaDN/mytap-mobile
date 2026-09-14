@@ -6,7 +6,7 @@ import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GlassCard } from '../src/components/cards/GlassCard';
 import { StaggeredItem } from '../src/components/animations/Staggered';
-import { spacing } from '../src/theme';
+import { spacing, type Theme } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
