@@ -1,44 +1,68 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { easeOut, ENTER_SCALE, timing } from './motion';
 
 /**
- * Staggered entry animation — fades + slides up each child in sequence.
+ * Staggered entry — a calm crossfade + 0.98 → 1.0 scale, ease-out.
+ * No bounce, no overshoot: content simply arrives.
  */
 export function StaggeredItem({
   index = 0,
   children,
   style,
+  delay,
 }: {
   index?: number;
   children: React.ReactNode;
   style?: ViewStyle;
+  /** Override the computed stagger delay (ms). */
+  delay?: number;
 }) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
     progress.value = withDelay(
-      index * 80,
-      withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) })
+      delay ?? index * 60,
+      withTiming(1, timing.fade)
     );
-  }, [index, progress]);
+  }, [index, delay, progress]);
 
   const styleAnim = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * 20 }],
+    transform: [{ scale: ENTER_SCALE + progress.value * (1 - ENTER_SCALE) }],
   }));
 
-  return (
-    <Animated.View style={[styles.item, style, styleAnim]}>
-      {children}
-    </Animated.View>
-  );
+  return <Animated.View style={[styles.item, style, styleAnim]}>{children}</Animated.View>;
+}
+
+/**
+ * Fade-in wrapper for a single element (no stagger, no movement).
+ * 300ms ease-out per the entry/exit spec.
+ */
+export function FadeIn({
+  children,
+  style,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  style?: ViewStyle;
+  delay?: number;
+}) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withDelay(delay, withTiming(1, { duration: 300, easing: easeOut }));
+  }, [delay, progress]);
+
+  const anim = useAnimatedStyle(() => ({ opacity: progress.value }));
+
+  return <Animated.View style={[style, anim]}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({
