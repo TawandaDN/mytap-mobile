@@ -3,6 +3,7 @@ import { useColorScheme } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEMES, Theme, ThemeId, ThemeMode } from './index';
+import { withPalette } from './tokens';
 
 interface ThemeContextValue {
   theme: Theme;
@@ -112,7 +113,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const theme = useMemo(() => {
     const def = THEMES[themeId];
-    return mode === 'dark' ? def.dark : def.light;
+    const base = mode === 'dark' ? def.dark : def.light;
+    // Overlay the theme's exact palette so background, surface, text and
+    // accent re-tint together on switch.
+    return withPalette(base, themeId, mode);
   }, [themeId, mode]);
 
   const value = useMemo(
