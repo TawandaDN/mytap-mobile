@@ -4,7 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GradientHeader } from '../src/components/ui/GradientHeader';
-import { GlassCard } from '../src/components/cards/GlassCard';
+import { Card } from '../src/components/ui/CardSystem';
+import { TileIcon, catColor } from '../src/components/ui/IconSystem';
+import { EmptyState } from '../src/components/ui/EmptyState';
 import { ScreenHeader } from '../src/components/ui/ScreenHeader';
 import { StaggeredItem } from '../src/components/animations/Staggered';
 import { Button } from '../src/components/ui/Button';
@@ -168,7 +170,7 @@ export default function PayScreen() {
           </StaggeredItem>
 
           <StaggeredItem index={3}>
-            <GlassCard solid style={styles.fieldCard}>
+            <Card style={styles.fieldCard}>
               <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Paying</Text>
               <View style={styles.fieldRow}>
                 <Text style={[styles.fieldValue, { color: theme.text }]}>
@@ -176,7 +178,7 @@ export default function PayScreen() {
                 </Text>
                 <Ionicons name="chevron-down" size={16} color={theme.textMuted} />
               </View>
-            </GlassCard>
+            </Card>
           </StaggeredItem>
 
           <StaggeredItem index={4}>
@@ -219,9 +221,7 @@ export default function PayScreen() {
                     }
                   }}
                 >
-                  <View style={[styles.quickIcon, { backgroundColor: q.color + '14' }]}>
-                    <Ionicons name={q.icon as any} size={20} color={q.color} />
-                  </View>
+                  <TileIcon icon={q.icon as keyof typeof Ionicons.glyphMap} color={q.color} />
                   <Text style={[styles.quickLabel, { color: theme.textSecondary }]}>{q.label}</Text>
                 </PressableScale>
               ))}
@@ -250,9 +250,10 @@ export default function PayScreen() {
                     setStage('confirm');
                   }}
                 >
-                  <View style={[styles.payeeIcon, { backgroundColor: p.color + '14' }]}>
-                    <Text style={styles.payeeEmoji}>{p.icon}</Text>
-                  </View>
+                  <TileIcon
+                    icon={payeeVisual(p.category).icon}
+                    color={payeeVisual(p.category).color}
+                  />
                   <View style={styles.payeeInfo}>
                     <Text style={[styles.payeeName, { color: theme.text }]} numberOfLines={1}>
                       {p.name}
@@ -274,7 +275,19 @@ export default function PayScreen() {
           </StaggeredItem>
 
           <StaggeredItem index={6}>
-            <GlassCard solid style={styles.contactsCard}>
+            {myzakaContacts.length === 0 ? (
+              <EmptyState
+                illustration="onboarding"
+                title="No contacts yet"
+                subtitle="Invite someone to MyZaka and they will appear here for one-tap transfers."
+                actionLabel="Invite a contact"
+                onAction={() => {
+                  haptics.light();
+                  show('Invite link copied', 'success');
+                }}
+              />
+            ) : (
+            <Card padded={false} style={styles.contactsCard}>
               {myzakaContacts.map((c, i) => (
                 <PressableScale
                   key={c.id}
@@ -294,11 +307,12 @@ export default function PayScreen() {
                   <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
                 </PressableScale>
               ))}
-            </GlassCard>
+            </Card>
+            )}
           </StaggeredItem>
 
           <StaggeredItem index={7}>
-            <GlassCard solid style={styles.amountCard}>
+            <Card style={styles.amountCard}>
               <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Amount</Text>
               <View style={styles.amountRow}>
                 <Text style={[styles.amountPrefix, { color: theme.text }]}>P</Text>
@@ -329,7 +343,7 @@ export default function PayScreen() {
                 ))}
               </View>
               <Button title="Pay now" onPress={() => startPayment()} fullWidth />
-            </GlassCard>
+            </Card>
           </StaggeredItem>
         </>
       )}
@@ -346,7 +360,7 @@ export default function PayScreen() {
           </StaggeredItem>
 
           <StaggeredItem index={3}>
-            <GlassCard solid style={styles.fieldCard}>
+            <Card style={styles.fieldCard}>
               <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>
                 Your MyTap number
               </Text>
@@ -364,7 +378,7 @@ export default function PayScreen() {
                 </Text>
                 <Ionicons name="chevron-down" size={16} color={theme.textMuted} />
               </PressableScale>
-            </GlassCard>
+            </Card>
           </StaggeredItem>
 
           <StaggeredItem index={4}>
@@ -446,6 +460,22 @@ export default function PayScreen() {
       </SlideUpModal>
     </ScreenContainer>
   );
+}
+
+/** Ledger category → icon-system tint + filled glyph. */
+function payeeVisual(category: string): { color: string; icon: keyof typeof Ionicons.glyphMap } {
+  switch (category) {
+    case 'Dining':
+      return { color: catColor('payments'), icon: 'restaurant' };
+    case 'Air':
+      return { color: catColor('bills'), icon: 'flash' };
+    case 'Data':
+      return { color: catColor('data'), icon: 'wifi' };
+    case 'Transfer':
+      return { color: catColor('savings'), icon: 'swap-horizontal' };
+    default:
+      return { color: catColor('history'), icon: 'person' };
+  }
 }
 
 /** Masks a phone number for display: +267 71 772 370 → +267 71 ••• ••70 */
@@ -591,13 +621,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
   },
-  quickIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   quickLabel: {
     ...type.small,
     fontSize: 10.5,
@@ -617,16 +640,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.md,
     gap: spacing.sm,
-  },
-  payeeIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  payeeEmoji: {
-    fontSize: 17,
   },
   payeeInfo: {},
   payeeName: {
