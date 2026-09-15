@@ -28,7 +28,7 @@ export function StaggeredItem({
 
   useEffect(() => {
     progress.value = withDelay(
-      delay ?? index * 60,
+      delay ?? index * 100,
       withTiming(1, timing.fade)
     );
   }, [index, delay, progress]);
