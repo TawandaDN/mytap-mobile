@@ -3,6 +3,9 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
+import { GradientHeader } from '../src/components/ui/GradientHeader';
+import { TileIcon } from '../src/components/ui/IconSystem';
+import { Illustration } from '../src/assets/illustrations';
 import { GlassCard } from '../src/components/cards/GlassCard';
 import { WalletCardView } from '../src/components/cards/WalletCardView';
 import { ScreenHeader } from '../src/components/ui/ScreenHeader';
@@ -13,7 +16,7 @@ import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
 import { cardShop } from '../src/data/mock';
 import { formatPula, maskCard } from '../src/utils/format';
-import { spacing, type, radius } from '../src/theme';
+import { spacing, type, radius, shadows } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
 
@@ -57,13 +60,16 @@ export default function CardsScreen() {
   };
 
   return (
-    <ScreenContainer>
-      <StaggeredItem index={0}>
-        <Text style={[styles.title, { color: theme.text }]}>Cards &amp; wallets</Text>
-        <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-          Everything you can tap.
-        </Text>
-      </StaggeredItem>
+    <ScreenContainer
+      edges={['bottom']}
+      contentContainerStyle={styles.screenContent}
+    >
+      <View style={styles.headBleed}>
+        <GradientHeader kind="cards">
+          <Text style={styles.headTitle}>CARDS &amp; WALLETS</Text>
+          <Text style={styles.headSub}>Everything you can tap.</Text>
+        </GradientHeader>
+      </View>
 
       {/* Layered gradient card list */}
       {state.cards.map((card, i) => (
@@ -80,20 +86,24 @@ export default function CardsScreen() {
             />
             <View style={styles.cardActions}>
               <PressableScale
-                style={[styles.actionBtn, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                style={[styles.actionBtn, { backgroundColor: theme.surface }]}
+                haptic="light"
                 onPress={() => openAdd(card.id)}
               >
-                <Ionicons name="add" size={15} color={theme.primary} />
+                <TileIcon icon="add" color={theme.primary} size={26} radius={9} glyph={15} />
                 <Text style={[styles.actionText, { color: theme.primary }]}>Add money</Text>
               </PressableScale>
               <PressableScale
-                style={[styles.actionBtn, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                style={[styles.actionBtn, { backgroundColor: theme.surface }]}
+                haptic="medium"
                 onPress={() => toggleFreeze(card.id)}
               >
-                <Ionicons
-                  name={card.frozen ? 'play' : 'pause'}
-                  size={15}
-                  color={theme.textSecondary}
+                <TileIcon
+                  icon={card.frozen ? 'play' : 'pause'}
+                  color="#6B7A8A"
+                  size={26}
+                  radius={9}
+                  glyph={15}
                 />
                 <Text style={[styles.actionText, { color: theme.textSecondary }]}>
                   {card.frozen ? 'Unfreeze' : 'Freeze'}
@@ -120,8 +130,11 @@ export default function CardsScreen() {
                 show(`${p.name} · ${p.priceLabel}`, 'info');
               }}
             >
-              <View style={[styles.shopIcon, { backgroundColor: p.color + '16' }]}>
-                <Ionicons name={p.icon as any} size={18} color={p.color} />
+              <View style={styles.shopIcon}>
+                <Illustration
+                  name={p.id === 'cs-metal' ? 'cardMetal' : 'cardVirtual'}
+                  size={44}
+                />
               </View>
               <View style={styles.shopInfo}>
                 <Text style={[styles.shopName, { color: theme.text }]}>{p.name}</Text>
@@ -225,6 +238,24 @@ function DetailTile({
 }
 
 const styles = StyleSheet.create({
+  screenContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  headBleed: {
+    marginBottom: spacing.lg,
+  },
+  headTitle: {
+    color: '#FFFFFF',
+    ...type.label,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+  },
+  headSub: {
+    color: 'rgba(255,255,255,0.78)',
+    ...type.largeTitle,
+    marginTop: 2,
+  },
   title: {
     ...type.largeTitle,
   },
@@ -237,6 +268,7 @@ const styles = StyleSheet.create({
   cardWrap: {
     marginBottom: spacing.lg,
     gap: spacing.sm,
+    marginHorizontal: spacing.lg,
   },
   cardActions: {
     flexDirection: 'row',
@@ -250,7 +282,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    ...shadows.subtle,
   },
   actionText: {
     ...type.caption,
@@ -268,11 +300,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   shopIcon: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   shopInfo: {
     flex: 1,
