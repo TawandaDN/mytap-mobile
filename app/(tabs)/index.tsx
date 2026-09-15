@@ -6,6 +6,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { useApp } from '../../src/store/AppStore';
 import { GlassCard } from '../../src/components/cards/GlassCard';
+import { TileIcon } from '../../src/components/ui/IconSystem';
+import { Illustration } from '../../src/assets/illustrations';
 import { HomeCard } from '../../src/components/cards/HomeCard';
 import { HubHeader } from '../../src/components/ui/HubHeader';
 import { QuickActionsGrid, QuickAction } from '../../src/components/ui/QuickActionsGrid';
@@ -68,11 +70,15 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenContainer onRefresh={onRefresh} refreshing={refreshing} contentContainerStyle={styles.root}>
+    <ScreenContainer
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+      edges={['bottom']}
+      contentContainerStyle={styles.root}
+    >
       {/* Deep navy gradient header (top ~30%) with the primary metric */}
       <View style={styles.headerWrap}>
         <HubHeader
-          greetingName="Tawanda"
           initial="TD"
           balance={totalBalance}
           searchValue={search}
@@ -164,7 +170,7 @@ export default function HomeScreen() {
               <View style={styles.telecomRing}>
                 <ProgressRing
                   size={104}
-                  strokeWidth={7}
+                  strokeWidth={6}
                   progress={tariff.usedPct / 100}
                   color="#2ECC71"
                   trackColor="rgba(255,255,255,0.18)"
@@ -238,9 +244,7 @@ export default function HomeScreen() {
         <StaggeredItem index={8}>
           <GlassCard style={styles.marketCard} bubbleStrength={0.5}>
             <View style={styles.marketHead}>
-              <View style={[styles.marketIcon, { backgroundColor: '#F5A62318' }]}>
-                <Ionicons name="flash" size={19} color="#F5A623" />
-              </View>
+              <TileIcon icon="flash" color="#F5A623" size={42} radius={14} glyph={19} />
               <View style={styles.marketHeadText}>
                 <Text style={[styles.marketKicker, { color: theme.textMuted }]}>
                   BPC · TOKEN LIFESPAN PREDICTOR
@@ -275,9 +279,7 @@ export default function HomeScreen() {
         <View style={styles.marketSplit}>
           <StaggeredItem index={9} style={styles.marketSplitItem}>
             <GlassCard style={styles.marketCardSm} bubbleStrength={0.5}>
-              <View style={[styles.marketIcon, { backgroundColor: '#2ECC7118' }]}>
-                <Ionicons name="water" size={19} color="#2ECC71" />
-              </View>
+              <TileIcon icon="water" color="#2ECC71" size={42} radius={14} glyph={19} />
               <Text style={[styles.marketKicker, { color: theme.textMuted }]}>
                 WUC · WATER INVOICE
               </Text>
@@ -303,9 +305,8 @@ export default function HomeScreen() {
 
           <StaggeredItem index={10} style={styles.marketSplitItem}>
             <GlassCard style={styles.marketCardSm} bubbleStrength={0.5}>
-              <View style={[styles.marketIcon, { backgroundColor: '#FF6B4A18' }]}>
-                <Ionicons name="cart" size={19} color="#FF6B4A" />
-              </View>
+              {/* Special offer — 3D cashback illustration */}
+              <Illustration name="coins" size={56} />
               <Text style={[styles.marketKicker, { color: theme.textMuted }]}>
                 CHOPPIES · CASHBACK MARKET
               </Text>
@@ -343,6 +344,7 @@ export default function HomeScreen() {
                 <PressableScale
                   style={styles.txRow}
                   bubble={false}
+                  haptic="light"
                   onPress={() => router.push('/transactions' as never)}
                 >
                   <View style={[styles.txIcon, { backgroundColor: t.color + '16' }]}>
@@ -392,6 +394,7 @@ export default function HomeScreen() {
                 <PressableScale
                   style={[styles.nfcBtn, { backgroundColor: theme.primary }]}
                   bubble={false}
+                  haptic="heavy"
                   onPress={() => router.push('/pay' as never)}
                 >
                   <Text style={styles.nfcBtnText}>Tap to pay</Text>
@@ -399,6 +402,7 @@ export default function HomeScreen() {
                 <PressableScale
                   style={styles.nfcClose}
                   bubble={false}
+                  haptic="light"
                   onPress={() => {
                     setNfcDismissed(true);
                     dispatch({ type: 'DISMISS_BANNER' });
@@ -504,12 +508,14 @@ const styles = StyleSheet.create({
     ...type.heading,
     fontWeight: '700',
     includeFontPadding: false,
+    textAlign: 'center',
   },
   ringLabel: {
     color: 'rgba(255,255,255,0.6)',
     ...type.small,
     fontSize: 9,
     includeFontPadding: false,
+    textAlign: 'center',
   },
   telecomMeta: {
     flexDirection: 'row',

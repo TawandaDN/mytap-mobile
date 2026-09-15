@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
+import { GradientHeader } from '../src/components/ui/GradientHeader';
 import { GlassCard } from '../src/components/cards/GlassCard';
 import { ScreenHeader } from '../src/components/ui/ScreenHeader';
 import { StaggeredItem } from '../src/components/animations/Staggered';
@@ -103,12 +104,14 @@ export default function PayScreen() {
   ];
 
   return (
-    <ScreenContainer>
-      {/* PAY / Send money in seconds. — coral accent */}
-      <StaggeredItem index={0}>
-        <Text style={[styles.kicker, { color: theme.accent }]}>PAY</Text>
-        <Text style={[styles.title, { color: theme.text }]}>Send money in seconds.</Text>
-      </StaggeredItem>
+    <ScreenContainer edges={['bottom']}>
+      {/* PAY / Send money in seconds. — coral accent on the bleeding gradient */}
+      <View style={styles.headBleed}>
+        <GradientHeader kind="payments">
+          <Text style={styles.kicker}>PAY</Text>
+          <Text style={styles.headTitle}>Send money in seconds.</Text>
+        </GradientHeader>
+      </View>
 
       {/* Pill-shaped segmented control */}
       <StaggeredItem index={1}>
@@ -120,6 +123,7 @@ export default function PayScreen() {
                 key={s.key}
                 scaleTo={0.97}
                 bubble={false}
+                haptic="light"
                 style={[
                   styles.segmentItem,
                   active && { backgroundColor: theme.surface, ...shadows.subtle },
@@ -204,6 +208,7 @@ export default function PayScreen() {
                 <PressableScale
                   key={q.label}
                   style={[styles.quickItem, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                  haptic="medium"
                   onPress={() => {
                     if (q.label === 'Tap Pay') {
                       setTapMode(true);
@@ -236,6 +241,7 @@ export default function PayScreen() {
                 <PressableScale
                   key={p.id}
                   style={[styles.payeeCard, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+                  haptic="medium"
                   onPress={() => {
                     const match = merchants.find((m) => m.name === p.name) ?? merchants[0];
                     setSelected(match);
@@ -310,6 +316,7 @@ export default function PayScreen() {
                   <PressableScale
                     key={a}
                     style={[styles.quickAmount, { backgroundColor: theme.surfaceAlt }]}
+                    haptic="light"
                     onPress={() => {
                       setAmount(String(a));
                       haptics.light();
@@ -346,6 +353,7 @@ export default function PayScreen() {
               <PressableScale
                 style={styles.fieldRow}
                 bubble={false}
+                haptic="light"
                 onPress={() => {
                   haptics.light();
                   show('Switch receiving number', 'info');
@@ -448,10 +456,21 @@ function maskPhone(p: string) {
 }
 
 const styles = StyleSheet.create({
+  headBleed: {
+    marginHorizontal: -spacing.lg,
+    marginTop: -spacing.md,
+    marginBottom: spacing.lg,
+  },
   kicker: {
+    color: '#FF6B4A',
     ...type.label,
     fontWeight: '700',
     letterSpacing: 1.4,
+  },
+  headTitle: {
+    color: '#FFFFFF',
+    ...type.largeTitle,
+    marginTop: 2,
   },
   title: {
     ...type.largeTitle,
