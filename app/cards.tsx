@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
 import { GradientHeader } from '../src/components/ui/GradientHeader';
-import { TileIcon } from '../src/components/ui/IconSystem';
+import { Card, ElevatedCard } from '../src/components/ui/CardSystem';
+import { Divider, TileIcon, catColor } from '../src/components/ui/IconSystem';
+import { EmptyState } from '../src/components/ui/EmptyState';
+import { CardsSkeleton } from '../src/components/animations/Skeletons';
 import { Illustration } from '../src/assets/illustrations';
-import { GlassCard } from '../src/components/cards/GlassCard';
 import { WalletCardView } from '../src/components/cards/WalletCardView';
 import { ScreenHeader } from '../src/components/ui/ScreenHeader';
 import { StaggeredItem } from '../src/components/animations/Staggered';
@@ -14,11 +16,11 @@ import { Button } from '../src/components/ui/Button';
 import { SlideUpModal } from '../src/components/ui/SlideUpModal';
 import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
-import { cardShop } from '../src/data/mock';
+import { cardShop, WalletCard } from '../src/data/mock';
 import { formatPula, maskCard } from '../src/utils/format';
-import { spacing, type, radius, shadows } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
+import { inter, layout, radii, space, text } from '../src/theme/tokens';
 
 /**
  * Cards & Wallets.
@@ -26,7 +28,8 @@ import { PressableScale } from '../src/components/ui/PressableScale';
  * The layered card list — each card a real gradient face with its scheme
  * mark, live balance and masked PAN — plus the Card Shop catalogue
  * (Virtual · Physical · Metal). Tapping a card opens its details sheet;
- * there is no 3D flip, no spin.
+ * there is no 3D flip, no spin. Initial mount shows card-shaped shimmer
+ * blocks in the real layout.
  */
 export default function CardsScreen() {
   const { theme } = useTheme();
@@ -34,7 +37,14 @@ export default function CardsScreen() {
   const { show } = useToast();
   const [addCardId, setAddCardId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
-  const [detailCard, setDetailCard] = useState<any>(null);
+  const [detailCard, setDetailCard] = useState<WalletCard | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  /** Initial mount — shimmer on the real layout, then reveal. */
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 700);
+    return () => clearTimeout(t);
+  }, []);
 
   const openAdd = (id: string) => {
     setAmount('');
@@ -60,91 +70,121 @@ export default function CardsScreen() {
   };
 
   return (
-    <ScreenContainer
-      edges={['bottom']}
-      contentContainerStyle={styles.screenContent}
-    >
+    <ScreenContainer edges={['bottom']} contentContainerStyle={styles.screenContent}>
       <View style={styles.headBleed}>
         <GradientHeader kind="cards">
-          <Text style={styles.headTitle}>CARDS &amp; WALLETS</Text>
-          <Text style={styles.headSub}>Everything you can tap.</Text>
+          <Text style={styles.headKicker}>CARDS &amp; WALLETS</Text>
+          <Text style={styles.headTitle}>Everything you can tap.</Text>
         </GradientHeader>
       </View>
 
-      {/* Layered gradient card list */}
-      {state.cards.map((card, i) => (
-        <StaggeredItem key={card.id} index={i + 1}>
-          <View style={styles.cardWrap}>
-            <WalletCardView
-              card={card}
-              height={188}
-              hideBalance={state.hideBalances}
-              onPress={() => {
-                setDetailCard(card);
-                haptics.medium();
-              }}
-            />
-            <View style={styles.cardActions}>
-              <PressableScale
-                style={[styles.actionBtn, { backgroundColor: theme.surface }]}
-                haptic="light"
-                onPress={() => openAdd(card.id)}
-              >
-                <TileIcon icon="add" color={theme.primary} size={26} radius={9} glyph={15} />
-                <Text style={[styles.actionText, { color: theme.primary }]}>Add money</Text>
-              </PressableScale>
-              <PressableScale
-                style={[styles.actionBtn, { backgroundColor: theme.surface }]}
-                haptic="medium"
-                onPress={() => toggleFreeze(card.id)}
-              >
-                <TileIcon
-                  icon={card.frozen ? 'play' : 'pause'}
-                  color="#6B7A8A"
-                  size={26}
-                  radius={9}
-                  glyph={15}
-                />
-                <Text style={[styles.actionText, { color: theme.textSecondary }]}>
-                  {card.frozen ? 'Unfreeze' : 'Freeze'}
-                </Text>
-              </PressableScale>
-            </View>
-          </View>
-        </StaggeredItem>
-      ))}
+      <View style={styles.body}>
+        {/* Loading — card-shaped shimmer blocks in the real layout */}
+        {loading && <CardsSkeleton count={3} />}
 
-      {/* Card Shop */}
-      <StaggeredItem index={state.cards.length + 1}>
-        <ScreenHeader title="Card shop" subtitle="Order a new card in a tap." />
-      </StaggeredItem>
+        {/* Empty — no instruments on the account at all */}
+        {!loading && state.cards.length === 0 && (
+          <EmptyState
+            illustration="cardVirtual"
+            title="No cards yet"
+            subtitle="Add a MyTap Wallet or order a card from the shop below — it appears here the moment it is issued."
+            actionLabel="Open the card shop"
+            onAction={() => {
+              haptics.light();
+              show('Scroll down to the card shop', 'info');
+            }}
+            style={styles.emptyCard}
+          />
+        )}
 
-      <StaggeredItem index={state.cards.length + 2}>
-        <GlassCard solid style={styles.shopCard}>
-          {cardShop.map((p, i) => (
-            <PressableScale
-              key={p.id}
-              style={[styles.shopRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.hairline }]}
-              onPress={() => {
-                haptics.light();
-                show(`${p.name} · ${p.priceLabel}`, 'info');
-              }}
-            >
-              <View style={styles.shopIcon}>
-                <Illustration
-                  name={p.id === 'cs-metal' ? 'cardMetal' : 'cardVirtual'}
-                  size={44}
+        {/* Layered gradient card list */}
+        {!loading &&
+          state.cards.map((card, i) => (
+            <StaggeredItem key={card.id} index={i + 1}>
+              <View style={styles.cardWrap}>
+                <WalletCardView
+                  card={card}
+                  height={188}
+                  hideBalance={state.hideBalances}
+                  onPress={() => {
+                    setDetailCard(card);
+                    haptics.medium();
+                  }}
                 />
+                <View style={styles.cardActions}>
+                  <PressableScale
+                    radius={radii.pill}
+                    haptic="light"
+                    style={[styles.actionBtn, { backgroundColor: theme.surface }]}
+                    onPress={() => openAdd(card.id)}
+                  >
+                    <TileIcon icon="add" color={theme.primary} size={26} radius={9} glyph={15} />
+                    <Text style={[styles.actionText, { color: theme.primary }]}>Add money</Text>
+                  </PressableScale>
+                  <PressableScale
+                    radius={radii.pill}
+                    haptic="medium"
+                    style={[styles.actionBtn, { backgroundColor: theme.surface }]}
+                    onPress={() => toggleFreeze(card.id)}
+                  >
+                    <TileIcon
+                      icon={card.frozen ? 'play' : 'pause'}
+                      color={catColor('history')}
+                      size={26}
+                      radius={9}
+                      glyph={15}
+                    />
+                    <Text style={[styles.actionText, { color: theme.textSecondary }]}>
+                      {card.frozen ? 'Unfreeze' : 'Freeze'}
+                    </Text>
+                  </PressableScale>
+                </View>
               </View>
-              <View style={styles.shopInfo}>
-                <Text style={[styles.shopName, { color: theme.text }]}>{p.name}</Text>
-                <Text style={[styles.shopBlurb, { color: theme.textMuted }]}>{p.blurb}</Text>
-              </View>
-              <Text style={[styles.shopPrice, { color: theme.text }]}>{p.priceLabel}</Text>
-            </PressableScale>
+            </StaggeredItem>
           ))}
-        </GlassCard>
-      </StaggeredItem>
+
+        {/* Card Shop */}
+        {!loading && (
+          <>
+            <StaggeredItem index={state.cards.length + 1}>
+              <ScreenHeader title="Card shop" subtitle="Order a new card in a tap." />
+            </StaggeredItem>
+
+            <StaggeredItem index={state.cards.length + 2}>
+              <Card padded={false} style={styles.shopCard}>
+                {cardShop.map((p, i) => (
+                  <View key={p.id}>
+                    {i > 0 && (
+                      <Divider indent={space.md + 44 + layout.iconToText} />
+                    )}
+                    <PressableScale
+                      radius={0}
+                      haptic="light"
+                      style={styles.shopRow}
+                      onPress={() => {
+                        haptics.light();
+                        show(`${p.name} · ${p.priceLabel}`, 'info');
+                      }}
+                    >
+                      <View style={[styles.shopIcon, { backgroundColor: theme.background }]}>
+                        <Illustration
+                          name={p.id === 'cs-metal' ? 'cardMetal' : 'cardVirtual'}
+                          size={44}
+                        />
+                      </View>
+                      <View style={styles.shopInfo}>
+                        <Text style={[styles.shopName, { color: theme.text }]}>{p.name}</Text>
+                        <Text style={[styles.shopBlurb, { color: theme.textMuted }]}>{p.blurb}</Text>
+                      </View>
+                      <Text style={[styles.shopPrice, { color: theme.text }]}>{p.priceLabel}</Text>
+                    </PressableScale>
+                  </View>
+                ))}
+              </Card>
+            </StaggeredItem>
+          </>
+        )}
+      </View>
 
       {/* Add money sheet */}
       <SlideUpModal visible={!!addCardId} onClose={() => setAddCardId(null)}>
@@ -152,7 +192,12 @@ export default function CardsScreen() {
         <Text style={[styles.modalSub, { color: theme.textMuted }]}>
           Top up your {state.cards.find((c) => c.id === addCardId)?.name}
         </Text>
-        <View style={[styles.inputWrap, { borderColor: theme.hairline }]}>
+        <View
+          style={[
+            styles.inputWrap,
+            { borderColor: theme.hairline, backgroundColor: theme.background },
+          ]}
+        >
           <Text style={[styles.inputPrefix, { color: theme.textMuted }]}>P</Text>
           <TextInput
             value={amount}
@@ -182,24 +227,41 @@ export default function CardsScreen() {
               <DetailTile icon="shield" label="CVV" value={detailCard.cvv} theme={theme} />
             </View>
 
-            <View style={[styles.limitRow, { borderColor: theme.hairline }]}>
-              <View>
-                <Text style={[styles.limitLabel, { color: theme.textMuted }]}>Daily limit</Text>
-                <Text style={[styles.limitValue, { color: theme.text }]}>
-                  {formatPula(detailCard.limit ?? 0)}
-                </Text>
+            <ElevatedCard style={styles.limitCard}>
+              <View style={styles.limitRow}>
+                <TileIcon
+                  icon="speedometer"
+                  color={detailCard.frozen ? theme.danger : catColor('transport')}
+                />
+                <View style={styles.limitInfo}>
+                  <Text style={[styles.limitLabel, { color: theme.textMuted }]}>Daily limit</Text>
+                  <Text style={[styles.limitValue, { color: theme.text }]}>
+                    {formatPula(detailCard.limit ?? 0)}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor: `${
+                        detailCard.frozen ? theme.danger : catColor('transport')
+                      }1F`,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      {
+                        color: detailCard.frozen ? theme.danger : catColor('transport'),
+                      },
+                    ]}
+                  >
+                    {detailCard.frozen ? 'Frozen' : 'Active'}
+                  </Text>
+                </View>
               </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: detailCard.frozen ? theme.danger : theme.primary },
-                ]}
-              >
-                <Text style={styles.statusBadgeText}>
-                  {detailCard.frozen ? 'Frozen' : 'Active'}
-                </Text>
-              </View>
-            </View>
+            </ElevatedCard>
 
             <Button
               title={detailCard.frozen ? 'Unfreeze card' : 'Freeze card'}
@@ -223,15 +285,17 @@ function DetailTile({
   value,
   theme,
 }: {
-  icon: any;
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
-  theme: any;
+  theme: { accent: string; text: string; textMuted: string; background: string };
 }) {
   return (
-    <View style={[styles.detailTile, { backgroundColor: theme.surfaceAlt }]}>
-      <Ionicons name={icon} size={17} color={theme.accent} />
-      <Text style={[styles.detailTileLabel, { color: theme.textMuted }]}>{label}</Text>
+    <View style={[styles.detailTile, { backgroundColor: theme.background }]}>
+      <View style={styles.detailTileHead}>
+        <TileIcon icon={icon} color={theme.accent} size={28} radius={9} glyph={14} />
+        <Text style={[styles.detailTileLabel, { color: theme.textMuted }]}>{label}</Text>
+      </View>
       <Text style={[styles.detailTileValue, { color: theme.text }]}>{value}</Text>
     </View>
   );
@@ -243,36 +307,31 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   headBleed: {
-    marginBottom: spacing.lg,
+    marginBottom: space.lg,
+  },
+  headKicker: {
+    color: 'rgba(255,255,255,0.72)',
+    ...text.sectionLabel,
   },
   headTitle: {
     color: '#FFFFFF',
-    ...type.label,
-    fontWeight: '700',
-    letterSpacing: 1.4,
+    ...text.screenTitle,
+    marginTop: space.xxs,
   },
-  headSub: {
-    color: 'rgba(255,255,255,0.78)',
-    ...type.largeTitle,
-    marginTop: 2,
+  body: {
+    paddingHorizontal: space.md,
   },
-  title: {
-    ...type.largeTitle,
-  },
-  subtitle: {
-    ...type.caption,
-    marginTop: 2,
-    marginBottom: spacing.xl,
+  emptyCard: {
+    marginBottom: layout.cardGap,
   },
 
   cardWrap: {
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
+    marginBottom: layout.cardGap,
+    gap: space.xs,
   },
   cardActions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: space.xs,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -280,123 +339,134 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: radius.pill,
-    ...shadows.subtle,
+    paddingVertical: space.xs + 2,
   },
   actionText: {
-    ...type.caption,
+    ...text.caption,
+    fontFamily: inter.semibold,
     fontWeight: '600',
   },
 
   shopCard: {
-    padding: 0,
+    marginTop: space.xxs,
   },
   shopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: spacing.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
   },
   shopIcon: {
     width: 44,
     height: 44,
-    borderRadius: 13,
+    borderRadius: radii.icon,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   shopInfo: {
     flex: 1,
+    marginHorizontal: layout.iconToText,
   },
   shopName: {
-    ...type.body,
-    fontWeight: '600',
+    ...text.cardTitle,
   },
   shopBlurb: {
-    ...type.caption,
-    fontSize: 12,
-    marginTop: 1,
+    ...text.caption,
+    fontSize: 12.5,
+    marginTop: layout.bodyToCaption,
   },
   shopPrice: {
-    ...type.money,
+    ...text.moneyTabular,
   },
 
   modalTitle: {
-    ...type.title,
-    marginBottom: 2,
+    ...text.screenTitle,
+    fontSize: 22,
+    marginBottom: space.xxs,
   },
   modalSub: {
-    ...type.caption,
-    marginBottom: spacing.xl,
+    ...text.caption,
+    marginBottom: space.lg,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.card,
+    paddingHorizontal: space.md,
+    marginBottom: layout.contentToButton,
   },
   inputPrefix: {
-    ...type.title,
+    fontSize: 20,
+    fontFamily: inter.semibold,
     fontWeight: '600',
-    marginRight: spacing.sm,
+    marginRight: space.xs,
   },
   input: {
     flex: 1,
-    ...type.title,
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: inter.semibold,
+    fontWeight: '600',
     fontVariant: ['tabular-nums'],
-    paddingVertical: spacing.lg,
+    paddingVertical: space.sm + 2,
   },
 
   detailGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+    gap: space.xs,
+    marginBottom: layout.cardGap,
   },
   detailTile: {
     width: '48%',
     flexGrow: 1,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    gap: 3,
+    borderRadius: radii.card,
+    padding: space.sm,
+    gap: space.xs,
+  },
+  detailTileHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
   },
   detailTileLabel: {
-    ...type.caption,
+    ...text.caption,
     fontSize: 12,
   },
   detailTileValue: {
-    ...type.money,
-    fontWeight: '700',
+    ...text.moneyTabular,
+    fontSize: 15,
+  },
+
+  limitCard: {
+    marginBottom: layout.cardGap,
   },
   limitRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+  },
+  limitInfo: {
+    flex: 1,
+    marginLeft: layout.iconToText,
   },
   limitLabel: {
-    ...type.caption,
+    ...text.label,
   },
   limitValue: {
-    ...type.heading,
+    ...text.cardTitle,
     fontVariant: ['tabular-nums'],
-    marginTop: 2,
+    marginTop: 1,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
+    paddingHorizontal: space.sm,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
   },
   statusBadgeText: {
-    color: '#fff',
-    ...type.small,
-    fontWeight: '600',
+    ...text.label,
+    fontFamily: inter.semibold,
+    fontWeight: '700',
   },
 });
