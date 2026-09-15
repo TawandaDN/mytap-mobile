@@ -92,6 +92,8 @@ export interface Theme {
   gold: string;
   /** Crisp indicator for data visualisations. */
   indicator: string;
+  /** Soft rail behind the indicator on dual-tone data tracks. */
+  indicatorTrack: string;
   glassShadow: string;
   danger: string;
   /** Strict card corner radius. */
@@ -142,6 +144,7 @@ const baseLight: Omit<
   gold: '#B8892B',
   /** Crisp violet indicator for data-visualisation tracks. */
   indicator: '#6B4FE0',
+  indicatorTrack: 'rgba(16,24,40,0.055)',
   glassShadow: 'rgba(16,24,40,0.08)',
   danger: palette.danger,
   cardRadius: 18,
@@ -170,6 +173,7 @@ const baseDark: Omit<
   primaryDeep: '#0B6B4F',
   gold: '#E6C463',
   indicator: '#9D8CFF',
+  indicatorTrack: 'rgba(255,255,255,0.08)',
   glassShadow: 'rgba(0,0,0,0.5)',
   danger: '#FF6B5E',
   cardRadius: 18,
