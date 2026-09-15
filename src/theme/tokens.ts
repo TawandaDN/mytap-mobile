@@ -307,6 +307,7 @@ export function withPalette(theme: Theme, id: ThemeId, mode: ThemeMode): Theme {
     textMuted: mode === 'dark' ? 'rgba(255,255,255,0.52)' : mts.textMuted,
     hairline: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
     border: mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)',
+    indicatorTrack: mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(16,24,40,0.055)',
     bubble: `${p.accent}1A`,
   };
 }
