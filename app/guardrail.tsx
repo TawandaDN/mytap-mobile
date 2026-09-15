@@ -10,16 +10,24 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../src/theme/ThemeContext';
 import { ScreenContainer } from '../src/components/ui/ScreenContainer';
-import { GlassCard } from '../src/components/cards/GlassCard';
+import { GradientHeader } from '../src/components/ui/GradientHeader';
+import { Card, ElevatedCard } from '../src/components/ui/CardSystem';
+import { TileIcon, catColor } from '../src/components/ui/IconSystem';
 import { StaggeredItem } from '../src/components/animations/Staggered';
 import { CountUp } from '../src/components/animations/CountUp';
 import { Button } from '../src/components/ui/Button';
 import { useToast } from '../src/components/ui/Toast';
 import { useApp } from '../src/store/AppStore';
-import { spacing, type, radius } from '../src/theme';
 import { haptics } from '../src/utils/haptics';
 import { PressableScale } from '../src/components/ui/PressableScale';
+import { inter, layout, radii, space, text } from '../src/theme/tokens';
 
+/**
+ * Guardrail — spending limits and financial wellness.
+ *
+ * The progress visual is a dual-tone track: a soft rail with a crisp violet
+ * indicator filling it on a steady 1500ms ease-out. Never a thick solid bar.
+ */
 export default function GuardrailScreen() {
   const { theme } = useTheme();
   const router = useRouter();
@@ -51,116 +59,183 @@ export default function GuardrailScreen() {
   };
 
   const wellness = g.pct < 50 ? 'Excellent' : g.pct < 80 ? 'On track' : 'Watch out';
+  const wellnessColor = g.pct < 50 ? '#2ECC71' : g.pct < 75 ? '#F5A623' : '#E74C3C';
+
+  const tips = [
+    { icon: 'trending-up' as const, text: 'You spent 12% less than last month. Keep it up!', color: catColor('transport') },
+    { icon: 'pie-chart' as const, text: 'Groceries are your biggest category at 34% of spend.', color: catColor('savings') },
+    { icon: 'bulb' as const, text: 'Set a P500 weekly budget for dining to save P2,000/month.', color: catColor('rewards') },
+  ];
 
   return (
-    <ScreenContainer>
-      <StaggeredItem index={0}>
-        <View style={styles.header}>
-          <PressableScale style={styles.backBtn} onPress={() => { haptics.light(); router.back(); }}>
-            <Ionicons name="chevron-back" size={22} color={theme.text} />
-          </PressableScale>
-          <Text style={[styles.title, { color: theme.text }]}>Guardrail</Text>
-        </View>
-      </StaggeredItem>
-
-      {/* Spending overview */}
-      <StaggeredItem index={1}>
-        <GlassCard bubbleColor="rgba(46,204,113,0.15)">
-          <View style={styles.overviewHeader}>
-            <Text style={[styles.overviewLabel, { color: theme.textMuted }]}>Spent this month</Text>
-            <View style={[styles.wellnessBadge, { backgroundColor: g.pct < 50 ? '#2ECC71' : g.pct < 75 ? '#F5A623' : '#E74C3C' }]}>
-              <Text style={styles.wellnessText}>{wellness}</Text>
+    <ScreenContainer edges={['bottom']} contentContainerStyle={styles.screenContent}>
+      <View style={styles.headBleed}>
+        <GradientHeader kind="generic">
+          <View style={styles.headRow}>
+            <PressableScale
+              haptic="light"
+              radius={radii.icon}
+              style={styles.backBtn}
+              onPress={() => {
+                haptics.light();
+                router.back();
+              }}
+            >
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            </PressableScale>
+            <View style={styles.headText}>
+              <Text style={styles.headKicker}>SPENDING</Text>
+              <Text style={styles.headTitle}>Guardrail</Text>
             </View>
           </View>
-          <CountUp
-            value={g.used}
-            format={(v) => `P${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-            glow={g.pct < 50 ? 'emerald' : 'coral'}
-            style={[styles.overviewValue, { color: theme.text }]}
-          />
-          {/* Dual-tone track — soft grey rail with a crisp violet indicator */}
-          <View
-            style={[
-              styles.progressTrack,
-              {
-                backgroundColor:
-                  theme.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(16,24,40,0.055)',
-              },
-            ]}
-          >
-            <Animated.View
-              style={[
-                styles.progressFill,
-                { backgroundColor: theme.indicator },
-                fillStyle,
-              ]}
-            />
-            <View style={styles.progressSpacer} />
-          </View>
-          <Text style={[styles.overviewSub, { color: theme.textMuted }]}>
-            {g.pct}% of P{g.monthlyLimit.toLocaleString()} limit
-          </Text>
-        </GlassCard>
-      </StaggeredItem>
+        </GradientHeader>
+      </View>
 
-      {/* Set limit */}
-      <StaggeredItem index={2}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Monthly limit</Text>
-        <GlassCard bubble={false}>
-          <View style={[styles.inputWrap, { borderColor: theme.border }]}>
-            <Text style={[styles.inputPrefix, { color: theme.textMuted }]}>P</Text>
-            <TextInput
-              value={limit}
-              onChangeText={setLimit}
-              keyboardType="number-pad"
-              placeholder="10000"
-              placeholderTextColor={theme.textMuted}
-              style={[styles.input, { color: theme.text }]}
-            />
-          </View>
-          <Button title="Save limit" onPress={saveLimit} variant="gold" style={styles.saveBtn} />
-        </GlassCard>
-      </StaggeredItem>
-
-      {/* Wellness tips */}
-      <StaggeredItem index={3}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Financial wellness</Text>
-        <GlassCard bubbleColor="rgba(245,166,35,0.15)">
-          {[
-            { icon: 'trending-up', text: 'You spent 12% less than last month. Keep it up!', color: '#2ECC71' },
-            { icon: 'pie-chart', text: 'Groceries are your biggest category at 34% of spend.', color: '#3498DB' },
-            { icon: 'bulb', text: 'Set a P500 weekly budget for dining to save P2,000/month.', color: '#F5A623' },
-          ].map((tip, i) => (
-            <View key={i} style={[styles.tipRow, i > 0 && styles.tipDivider]}>
-              <View style={[styles.tipIcon, { backgroundColor: tip.color + '22' }]}>
-                <Ionicons name={tip.icon as any} size={18} color={tip.color} />
+      <View style={styles.body}>
+        {/* Spending overview */}
+        <StaggeredItem index={0}>
+          <ElevatedCard style={styles.overviewCard}>
+            <View style={styles.overviewHeader}>
+              <Text style={[styles.overviewLabel, { color: theme.textMuted }]}>
+                Spent this month
+              </Text>
+              <View style={[styles.wellnessBadge, { backgroundColor: `${wellnessColor}1F` }]}>
+                <View style={[styles.wellnessDot, { backgroundColor: wellnessColor }]} />
+                <Text style={[styles.wellnessText, { color: wellnessColor }]}>{wellness}</Text>
               </View>
-              <Text style={[styles.tipText, { color: theme.textSecondary }]}>{tip.text}</Text>
             </View>
-          ))}
-        </GlassCard>
-      </StaggeredItem>
+
+            <CountUp
+              value={g.used}
+              format={(v) => `P ${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              glow={g.pct < 50 ? 'emerald' : 'coral'}
+              style={[styles.overviewValue, { color: theme.text }]}
+            />
+
+            {/* Dual-tone track — soft rail, crisp violet indicator */}
+            <View style={[styles.progressTrack, { backgroundColor: theme.indicatorTrack }]}>
+              <Animated.View
+                style={[
+                  styles.progressFill,
+                  { backgroundColor: theme.indicator },
+                  fillStyle,
+                ]}
+              />
+              <View style={styles.progressSpacer} />
+            </View>
+
+            <View style={styles.overviewFooter}>
+              <Text style={[styles.overviewSub, { color: theme.textMuted }]}>
+                {g.pct}% of P{g.monthlyLimit.toLocaleString()} limit
+              </Text>
+              <Text style={[styles.overviewRemaining, { color: theme.text }]}>
+                P{Math.max(0, g.monthlyLimit - g.used).toLocaleString()} left
+              </Text>
+            </View>
+          </ElevatedCard>
+        </StaggeredItem>
+
+        {/* Set limit */}
+        <StaggeredItem index={1}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Monthly limit</Text>
+          <Card>
+            <View style={styles.limitRow}>
+              <TileIcon icon="flag" color={catColor('savings')} />
+              <View style={styles.limitInfo}>
+                <Text style={[styles.limitTitle, { color: theme.text }]}>Set your ceiling</Text>
+                <Text style={[styles.limitSub, { color: theme.textMuted }]}>
+                  We alert you as you approach it.
+                </Text>
+              </View>
+            </View>
+
+            <View
+              style={[
+                styles.inputWrap,
+                { borderColor: theme.hairline, backgroundColor: theme.background },
+              ]}
+            >
+              <Text style={[styles.inputPrefix, { color: theme.textMuted }]}>P</Text>
+              <TextInput
+                value={limit}
+                onChangeText={setLimit}
+                keyboardType="number-pad"
+                placeholder="10000"
+                placeholderTextColor={theme.textMuted}
+                style={[styles.input, { color: theme.text }]}
+              />
+            </View>
+            <Button title="Save limit" onPress={saveLimit} variant="primary" fullWidth />
+          </Card>
+        </StaggeredItem>
+
+        {/* Wellness tips */}
+        <StaggeredItem index={2}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Financial wellness</Text>
+          <Card padded={false}>
+            {tips.map((tip, i) => (
+              <View key={tip.icon}>
+                {i > 0 && (
+                  <View
+                    style={[
+                      styles.tipDivider,
+                      { backgroundColor: theme.hairline, marginLeft: space.md + 44 + space.sm },
+                    ]}
+                  />
+                )}
+                <View style={styles.tipRow}>
+                  <TileIcon icon={tip.icon} color={tip.color} />
+                  <Text style={[styles.tipText, { color: theme.textSecondary }]}>{tip.text}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        </StaggeredItem>
+      </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  screenContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  headBleed: {
+    marginBottom: space.lg,
+  },
+  headRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
   },
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: radii.icon,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    ...type.title,
+  headText: {
+    marginLeft: space.sm,
+  },
+  headKicker: {
+    color: 'rgba(255,255,255,0.62)',
+    ...text.label,
+    fontFamily: inter.medium,
+    letterSpacing: 1.2,
+  },
+  headTitle: {
+    color: '#FFFFFF',
+    ...text.screenTitle,
+    marginTop: 1,
+  },
+  body: {
+    paddingHorizontal: space.md,
+  },
+
+  overviewCard: {
+    marginBottom: layout.cardGap,
   },
   overviewHeader: {
     flexDirection: 'row',
@@ -168,29 +243,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   overviewLabel: {
-    ...type.caption,
+    ...text.label,
+    letterSpacing: 0.5,
   },
   wellnessBadge: {
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: space.sm,
     paddingVertical: 5,
-    borderRadius: 999,
+    borderRadius: radii.pill,
+  },
+  wellnessDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   wellnessText: {
-    color: '#fff',
-    ...type.small,
+    ...text.label,
+    fontFamily: inter.semibold,
     fontWeight: '700',
-    letterSpacing: 0.2,
   },
   overviewValue: {
-    ...type.hero,
+    ...text.hero,
     fontVariant: ['tabular-nums'],
-    marginTop: spacing.sm,
+    marginTop: space.xs,
   },
   progressTrack: {
     height: 5,
     borderRadius: 3,
     overflow: 'hidden',
-    marginTop: spacing.lg,
+    marginTop: space.md,
     flexDirection: 'row',
   },
   progressFill: {
@@ -200,58 +283,78 @@ const styles = StyleSheet.create({
   progressSpacer: {
     flex: 1,
   },
-  overviewSub: {
-    ...type.caption,
-    marginTop: spacing.sm,
+  overviewFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: space.sm,
   },
+  overviewSub: {
+    ...text.caption,
+  },
+  overviewRemaining: {
+    ...text.moneyTabular,
+    fontSize: 14,
+  },
+
   sectionTitle: {
-    ...type.heading,
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
+    ...text.sectionHeader,
+    marginTop: space.lg,
+    marginBottom: layout.headerGap,
+  },
+  limitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: space.md,
+  },
+  limitInfo: {
+    flex: 1,
+    marginLeft: layout.iconToText,
+  },
+  limitTitle: {
+    ...text.cardTitle,
+  },
+  limitSub: {
+    ...text.caption,
+    marginTop: layout.bodyToCaption,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.card,
+    paddingHorizontal: space.md,
+    marginBottom: layout.contentToButton,
   },
   inputPrefix: {
-    ...type.title,
+    fontSize: 20,
+    fontFamily: inter.semibold,
     fontWeight: '600',
-    marginRight: spacing.sm,
+    marginRight: space.xs,
   },
   input: {
     flex: 1,
-    ...type.title,
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: inter.semibold,
+    fontWeight: '600',
     fontVariant: ['tabular-nums'],
-    paddingVertical: spacing.lg,
+    paddingVertical: space.sm + 2,
   },
-  saveBtn: {
-    marginTop: spacing.sm,
-  },
+
   tipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
   },
   tipDivider: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(16,24,40,0.06)',
-  },
-  tipIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: StyleSheet.hairlineWidth,
   },
   tipText: {
     flex: 1,
-    ...type.caption,
-    fontSize: 14,
-    lineHeight: 21,
+    marginLeft: layout.iconToText,
+    ...text.body,
+    fontSize: 14.5,
   },
 });
