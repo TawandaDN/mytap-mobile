@@ -8,16 +8,19 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
-import { radius, shadows, spacing, type } from '../../theme';
+import { elevation, inter, radii, space } from '../../theme/tokens';
 import { haptics } from '../../utils/haptics';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold' | 'dark';
 
 /**
  * MyTap button.
- * `primary` — rich deep forest green with modern layered depth.
- * `gold`    — polished metallic matte gold (not mud-yellow).
- * Full-width pill by default, anchored comfortably to the bottom.
+ *
+ * `primary` is the app's single interactive verb — a rich, solid deep green
+ * (never a flat yellow), with modern layered depth. `gold` is a polished
+ * metallic matte gold. Full-width pill by default.
+ *
+ * Press physics: 0.98 over 100ms ease-out, release to 1.0 over 200ms.
  */
 export function Button({
   title,
@@ -28,15 +31,17 @@ export function Button({
   style,
   icon,
   fullWidth = false,
+  size = 'lg',
 }: {
   title: string;
   onPress?: () => void;
   variant?: Variant;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
   icon?: React.ReactNode;
   fullWidth?: boolean;
+  size?: 'lg' | 'md' | 'sm';
 }) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
@@ -51,19 +56,25 @@ export function Button({
     onPress?.();
   };
 
-  /** Rich, solid brand tones with subtle modern depth. */
-  const gradientColors: Record<Variant, readonly [string, string, string]> = {
-    // deep forest green → deeper green (primary interactive + success)
+  /** Solid, confident brand tones — subtle depth, never mud. */
+  const gradients: Record<Variant, readonly [string, string, string]> = {
     primary: ['#12946E', theme.primary, theme.primaryDeep],
     secondary: [...theme.accentGradient],
-    // polished metallic matte gold
     gold: [...theme.goldGradient],
     danger: ['#E5604A', '#D92D20', '#9B1C16'],
     ghost: ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)'],
+    dark: ['#1E3A5F', '#16294A', '#0F1729'],
   };
 
   const textColor =
     variant === 'ghost' ? theme.text : variant === 'gold' ? '#3A2A06' : '#FFFFFF';
+
+  const pad =
+    size === 'sm'
+      ? { paddingVertical: 11, paddingHorizontal: space.lg }
+      : size === 'md'
+        ? { paddingVertical: 14, paddingHorizontal: space.xl }
+        : { paddingVertical: 17, paddingHorizontal: space.xl };
 
   return (
     <Animated.View
@@ -73,24 +84,24 @@ export function Button({
         onPressIn={() => {
           if (disabled || loading) return;
           // eslint-disable-next-line react-hooks/immutability
-          scale.value = withTiming(0.975, { duration: 300, easing: Easing.out(Easing.cubic) });
+          scale.value = withTiming(0.98, { duration: 100, easing: Easing.out(Easing.cubic) });
           haptics.pressIn();
         }}
         onPressOut={() => {
           // eslint-disable-next-line react-hooks/immutability
-          scale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+          scale.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) });
           haptics.pressOut();
         }}
         onPress={handlePress}
         disabled={disabled || loading}
       >
         <LinearGradient
-          colors={gradientColors[variant]}
+          colors={gradients[variant]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 0.6, y: 1 }}
-          style={styles.gradient}
+          end={{ x: 0.55, y: 1 }}
+          style={[styles.gradient, pad]}
         >
-          {/* Modern depth: soft top highlight + bottom inner shade */}
+          {/* Modern depth: top sheen + bottom inner shade */}
           <View style={styles.topSheen} pointerEvents="none" />
           <View style={styles.bottomShade} pointerEvents="none" />
           {loading ? (
@@ -109,10 +120,10 @@ export function Button({
 
 const styles = StyleSheet.create({
   wrap: {
-    borderRadius: radius.pill,
+    borderRadius: radii.pill,
     overflow: 'hidden',
     alignSelf: 'flex-start',
-    ...shadows.soft,
+    ...elevation.standard,
   },
   fullWidth: {
     alignSelf: 'stretch',
@@ -121,13 +132,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   gradient: {
-    paddingVertical: 16,
-    paddingHorizontal: spacing.xxl,
-    borderRadius: radius.pill,
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: space.xs,
     overflow: 'hidden',
   },
   topSheen: {
@@ -144,10 +153,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: 'rgba(0,0,0,0.14)',
   },
   label: {
-    ...type.subheading,
+    fontSize: 16,
+    lineHeight: 21,
+    fontFamily: inter.semibold,
     fontWeight: '600',
+    letterSpacing: -0.1,
   },
 });

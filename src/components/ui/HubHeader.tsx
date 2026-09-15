@@ -1,25 +1,21 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme/ThemeContext';
+import { GradientHeader } from '../ui/GradientHeader';
 import { PressableScale } from './PressableScale';
 import { CountUp } from '../animations/CountUp';
 import { formatPula } from '../../utils/format';
-import { spacing, type, radius, shadows } from '../../theme';
-import { haptics } from '../../utils/haptics';
+import { radii, space, text } from '../../theme/tokens';
 
 /**
- * Home header — the deep navy gradient block at the top of Home (~30% of the
- * screen) bleeding into the content canvas below.
+ * Home header.
  *
- * Holds the profile avatar, a utility search bar, a cart icon and a bell with
- * a notification badge, plus the primary metric (Total Balance) set in the
- * 40pt Light hero face.
+ * The deep navy gradient block at the top of Home — the profile avatar, a
+ * utility search bar, cart and notification icons — carrying the primary
+ * metric (Total Balance) in the 40pt Light hero face. The gradient bleeds
+ * into the content canvas beneath rather than ending on a hard edge.
  */
 export function HubHeader({
-  greetingName,
   initial,
   balance,
   searchValue,
@@ -30,7 +26,6 @@ export function HubHeader({
   unreadCount = 0,
   hideBalance = false,
 }: {
-  greetingName: string;
   initial: string;
   balance: number;
   searchValue: string;
@@ -41,77 +36,54 @@ export function HubHeader({
   unreadCount?: number;
   hideBalance?: boolean;
 }) {
-  const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
-
   return (
-    <LinearGradient
-      colors={[theme.headerGradient[0], theme.headerGradient[1], theme.headerGradient[2]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.header, { paddingTop: insets.top + spacing.md }]}
-    >
-      {/* Layered backdrop glows for depth */}
-      <View style={styles.glowA} pointerEvents="none" />
-      <View style={styles.glowB} pointerEvents="none" />
-
-      {/* Top row: avatar · utility icons */}
+    <GradientHeader kind="home">
+      {/* Top row — avatar · utility icons */}
       <View style={styles.topRow}>
-        <PressableScale
-          onPress={onAvatarPress}
-          style={styles.avatar}
-          scaleTo={0.92}
-          bubble={false}
-        >
+        <PressableScale onPress={onAvatarPress} style={styles.avatar} scaleTo={0.94} bubble={false}>
           <Text style={styles.avatarText}>{initial}</Text>
         </PressableScale>
+
         <View style={styles.utilityRow}>
           <PressableScale
             style={styles.utilityBtn}
-            onPress={() => {
-              haptics.light();
-              onCartPress?.();
-            }}
-            scaleTo={0.9}
+            haptic="light"
+            onPress={onCartPress}
+            scaleTo={0.96}
             bubble={false}
           >
-            <Ionicons name="cart-outline" size={17} color="rgba(255,255,255,0.92)" />
+            <Ionicons name="cart-outline" size={18} color="rgba(255,255,255,0.92)" />
           </PressableScale>
           <PressableScale
             style={styles.utilityBtn}
-            onPress={() => {
-              haptics.light();
-              onBellPress?.();
-            }}
-            scaleTo={0.9}
+            haptic="light"
+            onPress={onBellPress}
+            scaleTo={0.96}
             bubble={false}
           >
-            <Ionicons name="notifications-outline" size={17} color="rgba(255,255,255,0.92)" />
+            <Ionicons name="notifications-outline" size={18} color="rgba(255,255,255,0.92)" />
             {unreadCount > 0 && <View style={styles.badge} />}
           </PressableScale>
         </View>
       </View>
 
-      {/* Search bar (inside the gradient) */}
+      {/* Search — 20px radius, icon left, mic right, muted placeholder */}
       <View style={styles.searchWrap}>
-        <Ionicons name="search" size={16} color="rgba(255,255,255,0.7)" />
+        <Ionicons name="search" size={16} color="rgba(255,255,255,0.66)" />
         <TextInput
           value={searchValue}
           onChangeText={onSearchChange}
           placeholder="Search transactions, bills, or cards..."
-          placeholderTextColor="rgba(255,255,255,0.6)"
+          placeholderTextColor="rgba(255,255,255,0.55)"
           style={styles.searchInput}
         />
+        <Ionicons name="mic-outline" size={16} color="rgba(255,255,255,0.66)" />
       </View>
 
-      {/* Greeting */}
-      <Text style={styles.greeting}>Good morning, {greetingName}</Text>
-      <Text style={styles.greetingSub}>Here&apos;s what needs your attention.</Text>
-
-      {/* Primary metric — Total Balance in the 40pt Light hero face */}
-      <Text style={styles.balanceLabel}>Total Balance</Text>
+      {/* Primary metric */}
+      <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
       {hideBalance ? (
-        <Text style={styles.balance}>P••••••</Text>
+        <Text style={styles.balance}>P ••••••</Text>
       ) : (
         <CountUp
           value={balance}
@@ -121,37 +93,11 @@ export function HubHeader({
           style={styles.balance}
         />
       )}
-    </LinearGradient>
+    </GradientHeader>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxxl,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    overflow: 'hidden',
-    ...shadows.elevated,
-  },
-  glowA: {
-    position: 'absolute',
-    top: -90,
-    right: -70,
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-  },
-  glowB: {
-    position: 'absolute',
-    bottom: -120,
-    left: -80,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -160,7 +106,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radii.avatar,
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.35)',
@@ -169,12 +115,13 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#fff',
-    ...type.subheading,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
     fontWeight: '600',
   },
   utilityRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: space.xs,
   },
   utilityBtn: {
     width: 34,
@@ -186,11 +133,11 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: 7,
-    right: 8,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#FF6B4A',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.9)',
@@ -198,41 +145,31 @@ const styles = StyleSheet.create({
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: space.xs,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
+    borderRadius: radii.search,
+    paddingHorizontal: space.md,
     paddingVertical: 10,
-    marginTop: spacing.lg,
+    marginTop: space.md,
   },
   searchInput: {
     flex: 1,
-    ...type.body,
+    ...text.body,
     fontSize: 14,
     color: '#fff',
     padding: 0,
   },
-  greeting: {
-    color: 'rgba(255,255,255,0.94)',
-    ...type.heading,
-    fontWeight: '500',
-    marginTop: spacing.xl,
-  },
-  greetingSub: {
-    color: 'rgba(255,255,255,0.62)',
-    ...type.caption,
-    marginTop: 2,
-  },
   balanceLabel: {
     color: 'rgba(255,255,255,0.62)',
-    ...type.caption,
-    marginTop: spacing.xl,
+    ...text.label,
+    letterSpacing: 0.5,
+    marginTop: space.xl,
   },
   balance: {
     color: '#fff',
-    ...type.hero,
-    marginTop: spacing.xs,
+    ...text.hero,
+    marginTop: space.xxs,
   },
 });

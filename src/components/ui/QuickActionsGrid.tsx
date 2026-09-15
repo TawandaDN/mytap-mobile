@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { PressableScale } from './PressableScale';
-import { spacing, type, shadows } from '../../theme';
+import { TileIcon } from './IconSystem';
+import { radii, space, text } from '../../theme/tokens';
 import { haptics } from '../../utils/haptics';
 
 export interface QuickAction {
@@ -32,15 +33,16 @@ export function QuickActionsGrid({
       {actions.map((a) => (
         <PressableScale
           key={a.label}
-          style={[styles.tile, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
+          style={[styles.tile, { backgroundColor: theme.surface }]}
+          radius={radii.card}
+          shimmer
+          haptic="medium"
           onPress={() => {
             haptics.medium();
             onPress(a.route);
           }}
         >
-          <View style={[styles.iconWrap, { backgroundColor: a.color + '14' }]}>
-            <Ionicons name={a.icon} size={21} color={a.color} />
-          </View>
+          <TileIcon icon={a.icon} color={a.color} variant="solid" />
           <Text style={[styles.label, { color: theme.textSecondary }]} numberOfLines={1}>
             {a.label}
           </Text>
@@ -54,26 +56,23 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: space.xs,
   },
   tile: {
     width: '23%',
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: spacing.md,
+    borderRadius: radii.card,
+    paddingVertical: space.sm,
     alignItems: 'center',
     gap: 7,
-    ...shadows.subtle,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   label: {
-    ...type.small,
+    ...text.label,
     fontSize: 10.5,
     fontWeight: '600',
     textAlign: 'center',
