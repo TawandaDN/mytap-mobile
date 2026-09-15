@@ -3,21 +3,26 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { ScreenContainer } from '../../src/components/ui/ScreenContainer';
-import { GlassCard } from '../../src/components/cards/GlassCard';
+import { GradientHeader } from '../../src/components/ui/GradientHeader';
+import { Card, ElevatedCard } from '../../src/components/ui/CardSystem';
+import { TileIcon, catColor } from '../../src/components/ui/IconSystem';
 import { FadeIn, StaggeredItem } from '../../src/components/animations/Staggered';
 import { useApp } from '../../src/store/AppStore';
 import { userProfile } from '../../src/data/mock';
 import { formatPula, formatPx, shortDate } from '../../src/utils/format';
-import { spacing, type, radius } from '../../src/theme';
 import { haptics } from '../../src/utils/haptics';
 import { PressableScale } from '../../src/components/ui/PressableScale';
+import { inter, layout, radii, space, text } from '../../src/theme/tokens';
 
 /**
  * Assistant.
  *
- * A grounded answer surface — not a chatbot. It states plainly what it is
+ * A grounded answer surface — not a chat window. It states plainly what it is
  * looking at, answers only from the saved MyTap picture, and never invents a
- * balance or moves money. Answers are computed from live local state.
+ * balance or moves money. Every answer is computed from live local state.
+ *
+ * There are no conversational bubbles, no typing cursor, no streaming feed —
+ * the picture and the answer are simply present, in native lists.
  */
 export default function AssistantScreen() {
   const { theme } = useTheme();
@@ -77,276 +82,294 @@ export default function AssistantScreen() {
     "What's my remaining balance?",
   ];
 
-  const submit = (text: string) => {
-    if (!text.trim()) return;
+  const submit = (value: string) => {
+    if (!value.trim()) return;
     haptics.medium();
-    setAsked(text.trim());
+    setAsked(value.trim());
     setQuery('');
   };
 
   return (
-    <ScreenContainer>
-      <StaggeredItem index={0}>
-        <Text style={[styles.title, { color: theme.text }]}>Make sense of your money.</Text>
-        <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-          Ask about spending, tariff usage, balances or your guardrail.
-        </Text>
-      </StaggeredItem>
-
-      {/* ONLINE status card */}
-      <StaggeredItem index={1}>
-        <View style={[styles.onlineRow, { borderColor: theme.hairline, backgroundColor: theme.surface }]}>
-          <View style={[styles.onlineDot, { backgroundColor: theme.primary }]} />
-          <Text style={[styles.onlineText, { color: theme.primary }]}>ONLINE</Text>
-          <Text style={[styles.onlineMeta, { color: theme.textMuted }]}>
-            Grounded on your saved data
-          </Text>
-        </View>
-      </StaggeredItem>
-
-      {/* The "saved picture" */}
-      <StaggeredItem index={2}>
-        <GlassCard style={styles.pictureCard} bubbleStrength={0.6}>
-          <View style={styles.pictureHead}>
-            <View style={[styles.pictureIcon, { backgroundColor: theme.accent + '16' }]}>
-              <Ionicons name="sparkles" size={18} color={theme.accent} />
-            </View>
-            <Text style={[styles.pictureKicker, { color: theme.textMuted }]}>SAVED PICTURE</Text>
+    <ScreenContainer edges={['bottom']} contentContainerStyle={styles.screenContent}>
+      <View style={styles.headBleed}>
+        <GradientHeader kind="generic">
+          <View style={styles.headTop}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.onlineText}>ONLINE</Text>
           </View>
+          <Text style={styles.headTitle}>Make sense of your money.</Text>
+          <Text style={styles.headSub}>Ask about spending, tariff usage, balances or your guardrail.</Text>
+        </GradientHeader>
+      </View>
 
-          <Text style={[styles.pictureTitle, { color: theme.text }]}>
-            Good morning, {userProfile.name}.
-          </Text>
-          <Text style={[styles.pictureBody, { color: theme.textSecondary }]}>
-            I&apos;m looking at your saved MyTap picture — {state.cards.length} cards,{' '}
-            {state.transactions.length} transactions, your {state.tariff.provider}{' '}
-            {state.tariff.name} plan and your guardrail.
-          </Text>
-          <Text style={[styles.pictureBody, { color: theme.textMuted }]}>
-            I will not invent balances or execute payments for you.
-          </Text>
-
-          <View style={[styles.pictureDivider, { backgroundColor: theme.hairline }]} />
-          <Text style={[styles.picturePrompt, { color: theme.text }]}>
-            What do you want to understand?
-          </Text>
-        </GlassCard>
-      </StaggeredItem>
-
-      {/* Suggested questions */}
-      <StaggeredItem index={3}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Suggested</Text>
-        <View style={styles.suggestions}>
-          {suggestions.map((s) => (
-            <PressableScale
-              key={s}
-              style={[styles.suggestion, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
-              onPress={() => submit(s)}
-            >
-              <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{s}</Text>
-              <Ionicons name="arrow-forward" size={14} color={theme.textMuted} />
-            </PressableScale>
-          ))}
-        </View>
-      </StaggeredItem>
-
-      {/* Answer */}
-      {answer && (
-        <FadeIn>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Answer</Text>
-          <GlassCard style={styles.answerCard}>
-            <View style={styles.answerHead}>
-              <View style={[styles.answerIcon, { backgroundColor: theme.primary + '16' }]}>
-                <Ionicons name="checkmark-circle" size={18} color={theme.primary} />
+      <View style={styles.body}>
+        {/* The "saved picture" */}
+        <StaggeredItem index={0}>
+          <ElevatedCard style={styles.pictureCard}>
+            <View style={styles.pictureHead}>
+              <TileIcon icon="analytics" color={theme.accent} />
+              <View style={styles.pictureHeadText}>
+                <Text style={[styles.pictureKicker, { color: theme.textMuted }]}>SAVED PICTURE</Text>
+                <Text style={[styles.pictureTitle, { color: theme.text }]}>
+                  Good morning, {userProfile.name}.
+                </Text>
               </View>
-              <Text style={[styles.answerQuestion, { color: theme.textMuted }]} numberOfLines={2}>
-                {asked}
+            </View>
+
+            <Text style={[styles.pictureBody, { color: theme.textSecondary }]}>
+              I&apos;m looking at your saved MyTap picture — {state.cards.length} cards,{' '}
+              {state.transactions.length} transactions, your {state.tariff.provider}{' '}
+              {state.tariff.name} plan and your guardrail.
+            </Text>
+
+            <View style={[styles.groundRow, { borderColor: theme.hairline }]}>
+              <Ionicons name="lock-closed" size={14} color={theme.textMuted} />
+              <Text style={[styles.groundText, { color: theme.textMuted }]}>
+                I will not invent balances or execute payments for you.
               </Text>
             </View>
-            <Text style={[styles.answerText, { color: theme.text }]}>{answer}</Text>
-          </GlassCard>
-        </FadeIn>
-      )}
 
-      {/* Ask input */}
-      <StaggeredItem index={4}>
-        <View style={[styles.askWrap, { backgroundColor: theme.surface, borderColor: theme.hairline }]}>
-          <Ionicons name="chatbubble-outline" size={16} color={theme.textMuted} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Ask about your money or tariff"
-            placeholderTextColor={theme.textMuted}
-            onSubmitEditing={() => submit(query)}
-            returnKeyType="send"
-            style={[styles.askInput, { color: theme.text }]}
-          />
-          <PressableScale
-            style={[styles.askBtn, { backgroundColor: theme.primary }]}
-            bubble={false}
-            onPress={() => submit(query)}
+            <Text style={[styles.picturePrompt, { color: theme.text }]}>
+              What do you want to understand?
+            </Text>
+          </ElevatedCard>
+        </StaggeredItem>
+
+        {/* Suggested questions */}
+        <StaggeredItem index={1}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Suggested</Text>
+          <Card padded={false}>
+            {suggestions.map((s, i) => (
+              <View key={s}>
+                {i > 0 && (
+                  <View
+                    style={[
+                      styles.rowDivider,
+                      { backgroundColor: theme.hairline, marginLeft: space.md + 32 + layout.iconToText },
+                    ]}
+                  />
+                )}
+                <PressableScale
+                  radius={0}
+                  haptic="light"
+                  style={styles.suggestion}
+                  onPress={() => submit(s)}
+                >
+                  <TileIcon icon="help-circle" color={catColor('savings')} size={32} radius={11} glyph={16} />
+                  <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{s}</Text>
+                  <Ionicons name="arrow-forward" size={15} color={theme.textMuted} />
+                </PressableScale>
+              </View>
+            ))}
+          </Card>
+        </StaggeredItem>
+
+        {/* Answer */}
+        {answer && (
+          <FadeIn>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Answer</Text>
+            <Card padded={false}>
+              <View style={styles.answerHead}>
+                <TileIcon icon="checkmark-circle" color={catColor('transport')} size={32} radius={11} glyph={16} />
+                <Text style={[styles.answerQuestion, { color: theme.textMuted }]} numberOfLines={2}>
+                  {asked}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.rowDivider,
+                  { backgroundColor: theme.hairline, marginLeft: space.md + 32 + layout.iconToText },
+                ]}
+              />
+              <Text style={[styles.answerText, { color: theme.text }]}>{answer}</Text>
+            </Card>
+          </FadeIn>
+        )}
+
+        {/* Ask input */}
+        <StaggeredItem index={2}>
+          <View
+            style={[styles.askWrap, { backgroundColor: theme.surface, borderColor: theme.hairline }]}
           >
-            <Text style={styles.askBtnText}>Ask</Text>
-          </PressableScale>
-        </View>
-      </StaggeredItem>
+            <Ionicons name="search" size={16} color={theme.textMuted} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Ask about your money or tariff"
+              placeholderTextColor={theme.textMuted}
+              onSubmitEditing={() => submit(query)}
+              returnKeyType="send"
+              style={[styles.askInput, { color: theme.text }]}
+            />
+            <PressableScale
+              radius={radii.pill}
+              haptic="light"
+              style={[styles.askBtn, { backgroundColor: theme.primary }]}
+              onPress={() => submit(query)}
+            >
+              <Text style={styles.askBtnText}>Ask</Text>
+            </PressableScale>
+          </View>
+        </StaggeredItem>
+      </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    ...type.largeTitle,
+  screenContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
-  subtitle: {
-    ...type.caption,
-    marginTop: 4,
-    marginBottom: spacing.lg,
-    lineHeight: 19,
+  headBleed: {
+    marginBottom: space.lg,
   },
-
-  onlineRow: {
+  headTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 10,
-    marginBottom: spacing.md,
+    gap: 7,
   },
   onlineDot: {
     width: 7,
     height: 7,
     borderRadius: 3.5,
+    backgroundColor: '#2ECC71',
   },
   onlineText: {
-    ...type.label,
+    color: 'rgba(255,255,255,0.72)',
+    ...text.label,
+    fontFamily: inter.semibold,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
   },
-  onlineMeta: {
-    ...type.small,
-    marginLeft: 'auto',
+  headTitle: {
+    color: '#FFFFFF',
+    ...text.screenTitle,
+    marginTop: space.xs,
+  },
+  headSub: {
+    color: 'rgba(255,255,255,0.78)',
+    ...text.caption,
+    marginTop: space.xxs,
+    maxWidth: 300,
+    lineHeight: 19,
+  },
+  body: {
+    paddingHorizontal: space.md,
   },
 
   pictureCard: {
-    padding: 16,
+    marginBottom: layout.cardGap,
   },
   pictureHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
   },
-  pictureIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  pictureHeadText: {
+    flex: 1,
+    marginLeft: layout.iconToText,
   },
   pictureKicker: {
-    ...type.label,
+    ...text.label,
+    fontFamily: inter.semibold,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
   pictureTitle: {
-    ...type.heading,
-    fontWeight: '600',
+    ...text.cardTitle,
+    marginTop: 1,
   },
   pictureBody: {
-    ...type.body,
+    ...text.body,
     fontSize: 14.5,
-    lineHeight: 22,
-    marginTop: spacing.sm,
+    marginTop: space.sm,
   },
-  pictureDivider: {
-    height: 1,
-    marginVertical: spacing.lg,
+  groundRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.card,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
+    marginTop: space.sm,
+  },
+  groundText: {
+    flex: 1,
+    ...text.caption,
+    fontSize: 12.5,
   },
   picturePrompt: {
-    ...type.subheading,
-    fontWeight: '600',
+    ...text.cardTitle,
+    marginTop: space.md,
   },
 
   sectionTitle: {
-    ...type.heading,
-    fontWeight: '600',
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  suggestions: {
-    gap: spacing.sm,
+    ...text.sectionHeader,
+    marginTop: space.lg,
+    marginBottom: layout.headerGap,
   },
   suggestion: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    borderWidth: 1,
-    borderRadius: radius.card,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 13,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
   },
   suggestionText: {
     flex: 1,
-    ...type.body,
+    marginHorizontal: layout.iconToText,
+    ...text.body,
     fontSize: 14.5,
   },
-
-  answerCard: {
-    padding: 16,
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
   },
+
   answerHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  answerIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: space.md,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
   },
   answerQuestion: {
     flex: 1,
-    ...type.caption,
+    marginLeft: layout.iconToText,
+    ...text.caption,
     fontSize: 12.5,
   },
   answerText: {
-    ...type.body,
+    ...text.body,
     fontSize: 15,
-    lineHeight: 23,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
   },
 
   askWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingLeft: spacing.lg,
+    gap: space.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.pill,
+    paddingLeft: space.md,
     paddingRight: 5,
     paddingVertical: 5,
-    marginTop: spacing.xl,
+    marginTop: space.lg,
   },
   askInput: {
     flex: 1,
-    ...type.body,
+    ...text.body,
     fontSize: 14.5,
     padding: 0,
   },
   askBtn: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: radius.pill,
+    paddingHorizontal: space.md + 2,
+    paddingVertical: space.xs + 2,
   },
   askBtnText: {
-    color: '#fff',
-    ...type.caption,
+    color: '#FFFFFF',
+    ...text.caption,
+    fontFamily: inter.semibold,
     fontWeight: '600',
   },
 });
